@@ -1,0 +1,23 @@
+{
+  "name": "scheduling",
+  "version": "1.0.0",
+  "description": "Sistema de Agendamento Inteligente - Orquestrador Fullstack",
+  "private": true,
+  "scripts": {
+    "setup": "npm run docker:up && npm run api:compile && npm run web:install",
+    "dev": "concurrently -n \"DOCKER,API,WEB\" -c \"blue,magenta,green\" \"npm run docker:up\" \"npm run api:dev\" \"npm run web:dev\"",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:restart": "docker compose restart",
+    "docker:logs": "docker compose logs -f",
+    "api:compile": "cd api && mvnw compile -DskipTests",
+    "api:dev": "cd api && mvnw spring-boot:run",
+    "api:test": "cd api && mvnw clean verify",
+    "web:install": "npm --prefix web install",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
