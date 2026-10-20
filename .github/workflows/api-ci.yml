@@ -1,0 +1,42 @@
+name: API CI
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "api/**"
+      - ".github/workflows/api-ci.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "api/**"
+      - ".github/workflows/api-ci.yml"
+
+concurrency:
+  group: api-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Compilar e executar testes (API)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Realizar checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar ambiente Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: 21
+          cache: "maven"
+          cache-dependency-path: "api/pom.xml"
+
+      - name: Permissão de execução para o Maven Wrapper
+        working-directory: api
+        run: chmod +x ./mvnw
+
+      - name: Executar testes com Maven
+        working-directory: api
+        run: ./mvnw clean verify -B
