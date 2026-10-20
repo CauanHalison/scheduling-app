@@ -1,0 +1,55 @@
+# Build e Compilação
+target/
+build/
+dist/
+dist-ssr/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Node & Frontend
+node_modules/
+.npm/
+.eslintcache
+*.tsbuildinfo
+*.local
+
+# Variáveis de Ambiente
+.env
+*.env
+*.key
+*.pem
+
+# Logs da Aplicação
+logs/
+*.log
+
+# Arquivos do Sistema Operacional
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE: IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# IDE: VS Code
+.vscode/
+
+# IDE: Eclipse / STS
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
