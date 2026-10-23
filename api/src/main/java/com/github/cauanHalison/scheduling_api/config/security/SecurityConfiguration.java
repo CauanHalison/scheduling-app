@@ -14,6 +14,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -26,13 +27,18 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfiguration {
 
-    @Value("${app.frontend.url:http://localhost:3000}")
+    @Value("${app.frontend.url}")
     private String frontendUrl;
 
     private final HandlerExceptionResolver resolver;
+    private final JwtAuthenticationFilter jwtAuthFilter;
 
-    public SecurityConfiguration(@Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
+    public SecurityConfiguration(
+            @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver,
+            JwtAuthenticationFilter jwtAuthFilter
+    ) {
         this.resolver = resolver;
+        this.jwtAuthFilter = jwtAuthFilter;
     }
 
     @Bean
@@ -61,9 +67,10 @@ public class SecurityConfiguration {
                                 "/actuator/health",
                                 "/actuator/info"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
@@ -82,9 +89,7 @@ public class SecurityConfiguration {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
-                frontendUrl,
-                "http://localhost:3000",
-                "http://localhost:5173"
+                frontendUrl
         ));
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
