@@ -1,9 +1,13 @@
 server:
   port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api/v1
 
 spring:
   application:
     name: scheduling-api
+  config:
+    import: optional:file:.env[.properties],optional:file:../.env[.properties]
 
   threads:
     virtual:
@@ -58,6 +62,14 @@ spring:
     time-zone: UTC
     serialization:
       write-dates-as-timestamps: false
+
+springdoc:
+  swagger-ui:
+    path: /docs
+
+logging:
+  pattern:
+    level: "%5p [reqId=%X{requestId:-system}]"
 
 management:
   endpoints:
