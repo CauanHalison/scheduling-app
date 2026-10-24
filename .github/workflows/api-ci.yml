@@ -40,3 +40,5 @@ jobs:
       - name: Executar testes com Maven
         working-directory: api
         run: ./mvnw clean verify -B
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
