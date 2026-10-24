@@ -1,10 +1,13 @@
 package com.github.cauanHalison.scheduling_api.identity.web.docs;
 
+import com.github.cauanHalison.scheduling_api.config.security.ProviderPrincipal;
 import com.github.cauanHalison.scheduling_api.identity.dto.AuthRequest;
 import com.github.cauanHalison.scheduling_api.identity.dto.AuthResponse;
+import com.github.cauanHalison.scheduling_api.identity.dto.ProviderResponse;
 import com.github.cauanHalison.scheduling_api.identity.dto.RefreshTokenRequest;
 import com.github.cauanHalison.scheduling_api.identity.dto.RegisterProviderRequest;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,4 +39,10 @@ public interface AuthControllerDocs {
             @ApiResponse(responseCode = "204", description = "Provider successfully logged out")
     })
     ResponseEntity<Void> logout(RefreshTokenRequest refreshTokenRequest);
+
+    @Operation(summary = "Get current provider", description = "Returns the authenticated provider profile data")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Profile retrieved successfully")
+    })
+    ResponseEntity<ProviderResponse> me(@Parameter(hidden = true) ProviderPrincipal principal);
 }

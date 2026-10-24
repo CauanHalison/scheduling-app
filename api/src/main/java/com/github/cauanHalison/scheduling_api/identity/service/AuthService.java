@@ -8,8 +8,10 @@ import com.github.cauanHalison.scheduling_api.identity.domain.ProviderEntity;
 import com.github.cauanHalison.scheduling_api.identity.domain.RefreshTokenEntity;
 import com.github.cauanHalison.scheduling_api.identity.dto.AuthRequest;
 import com.github.cauanHalison.scheduling_api.identity.dto.AuthResponse;
+import com.github.cauanHalison.scheduling_api.identity.dto.ProviderResponse;
 import com.github.cauanHalison.scheduling_api.identity.dto.RefreshTokenRequest;
 import com.github.cauanHalison.scheduling_api.identity.dto.RegisterProviderRequest;
+import com.github.cauanHalison.scheduling_api.identity.mapper.ProviderMapper;
 import com.github.cauanHalison.scheduling_api.identity.repository.ProviderRepository;
 import com.github.cauanHalison.scheduling_api.identity.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,7 @@ import java.util.UUID;
 public class AuthService {
     private final ProviderRepository providerRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final ProviderMapper providerMapper;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -52,12 +55,8 @@ public class AuthService {
             throw new ResourceConflictException("Este slug já está em uso.");
         }
 
-        ProviderEntity providerEntity = new ProviderEntity();
-        providerEntity.setName(request.name());
-        providerEntity.setEmail(request.email());
-        providerEntity.setPasswordHash(passwordEncoder.encode(request.password()));
-        providerEntity.setSlug(request.slug());
-        providerEntity.setTimeZone(request.timeZone());
+        String encodedPassword = passwordEncoder.encode(request.password());
+        ProviderEntity providerEntity = providerMapper.toEntity(request, encodedPassword);
 
         ProviderEntity savedProvider = providerRepository.save(providerEntity);
         log.info("New provider registered successfully: id={}, slug={}", savedProvider.getId(), savedProvider.getSlug());
@@ -118,6 +117,10 @@ public class AuthService {
                         log.info("Provider logged out (refresh token revoked): tokenId={}", token.getId());
                     }
                 });
+    }
+
+    public ProviderResponse me(ProviderPrincipal principal) {
+        return providerMapper.toResponse(principal);
     }
 
     private String createRefreshToken(ProviderEntity provider) {

@@ -1,7 +1,9 @@
 package com.github.cauanHalison.scheduling_api.identity.web;
 
+import com.github.cauanHalison.scheduling_api.config.security.ProviderPrincipal;
 import com.github.cauanHalison.scheduling_api.identity.dto.AuthRequest;
 import com.github.cauanHalison.scheduling_api.identity.dto.AuthResponse;
+import com.github.cauanHalison.scheduling_api.identity.dto.ProviderResponse;
 import com.github.cauanHalison.scheduling_api.identity.dto.RefreshTokenRequest;
 import com.github.cauanHalison.scheduling_api.identity.dto.RegisterProviderRequest;
 import com.github.cauanHalison.scheduling_api.identity.service.AuthService;
@@ -10,6 +12,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,5 +50,11 @@ public class AuthController implements AuthControllerDocs {
     public ResponseEntity<Void> logout(@RequestBody @Valid RefreshTokenRequest refreshTokenRequest) {
         authService.logout(refreshTokenRequest);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @GetMapping("/me")
+    public ResponseEntity<ProviderResponse> me(@AuthenticationPrincipal ProviderPrincipal principal) {
+        return ResponseEntity.ok(authService.me(principal));
     }
 }
