@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -30,7 +31,14 @@ public class JwtService {
     }
 
     public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+        Map<String, Object> claims = new HashMap<>();
+        if (userDetails instanceof ProviderPrincipal principal) {
+            claims.put("name", principal.name());
+            claims.put("email", principal.email());
+            claims.put("slug", principal.slug());
+            claims.put("timeZone", principal.timeZone());
+        }
+        return generateToken(claims, userDetails);
     }
 
     public String generateToken(Map<String, Object> claims, UserDetails userDetails) {
@@ -38,6 +46,7 @@ public class JwtService {
         Instant expiration = now.plusSeconds(accessTokenExpiration);
 
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .claims(claims)
                 .subject(userDetails.getUsername())
                 .issuedAt(Date.from(now))
@@ -48,6 +57,26 @@ public class JwtService {
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extractJti(String token) {
+        return extractClaim(token, Claims::getId);
+    }
+
+    public Instant extractExpiration(String token) {
+        return extractClaim(token, claims -> claims.getExpiration().toInstant());
+    }
+
+    public ProviderPrincipal extractPrincipal(String token) {
+        Claims claims = extractAllClaims(token);
+        return new ProviderPrincipal(
+                UUID.fromString(claims.getSubject()),
+                claims.get("name", String.class),
+                claims.get("email", String.class),
+                null,
+                claims.get("slug", String.class),
+                claims.get("timeZone", String.class)
+        );
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
