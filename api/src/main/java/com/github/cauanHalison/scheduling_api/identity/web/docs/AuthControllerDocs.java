@@ -34,11 +34,11 @@ public interface AuthControllerDocs {
     })
     ResponseEntity<AuthResponse> refreshToken(RefreshTokenRequest refreshTokenRequest);
 
-    @Operation(summary = "Logout", description = "Revokes the refresh token and logs out the provider")
+    @Operation(summary = "Logout", description = "Revokes the refresh token, blacklists the access token in Redis and logs out the provider")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Provider successfully logged out")
     })
-    ResponseEntity<Void> logout(RefreshTokenRequest refreshTokenRequest);
+    ResponseEntity<Void> logout(@Parameter(hidden = true) String authHeader, RefreshTokenRequest refreshTokenRequest);
 
     @Operation(summary = "Get current provider", description = "Returns the authenticated provider profile data")
     @ApiResponses({

@@ -2,6 +2,7 @@ package com.github.cauanHalison.scheduling_api.identity.service;
 
 import com.github.cauanHalison.scheduling_api.config.security.JwtService;
 import com.github.cauanHalison.scheduling_api.config.security.ProviderPrincipal;
+import com.github.cauanHalison.scheduling_api.config.security.TokenBlacklistService;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.InvalidTokenException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
 import com.github.cauanHalison.scheduling_api.identity.domain.ProviderEntity;
@@ -39,6 +40,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final ProviderMapper providerMapper;
     private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
 
@@ -106,7 +108,7 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(RefreshTokenRequest request) {
+    public void logout(String authHeader, RefreshTokenRequest request) {
         String incomingHash = hashToken(request.refreshToken());
 
         refreshTokenRepository.findByTokenHash(incomingHash)
@@ -117,6 +119,18 @@ public class AuthService {
                         log.info("Provider logged out (refresh token revoked): tokenId={}", token.getId());
                     }
                 });
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String accessToken = authHeader.substring(7);
+            try {
+                String jti = jwtService.extractJti(accessToken);
+                Instant expiresAt = jwtService.extractExpiration(accessToken);
+                tokenBlacklistService.blacklistToken(jti, expiresAt);
+                log.info("Access token blacklisted in Redis: jti={}", jti);
+            } catch (Exception e) {
+                log.debug("Skipped access token blacklisting (expired or invalid token)");
+            }
+        }
     }
 
     public ProviderResponse me(ProviderPrincipal principal) {

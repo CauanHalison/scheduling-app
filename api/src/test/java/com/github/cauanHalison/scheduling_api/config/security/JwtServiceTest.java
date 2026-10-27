@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +45,25 @@ public class JwtServiceTest {
         assertThat(token).isNotBlank();
         assertThat(extractedSubject).isEqualTo(principal.id().toString());
         assertThat(jwtService.isTokenValid(token, principal)).isTrue();
+    }
+
+    @Test
+    @DisplayName("Should embed provider claims and JTI into JWT and reconstruct ProviderPrincipal without passwordHash")
+    void shouldExtractPrincipalAndJtiFromToken() {
+        String token = jwtService.generateToken(principal);
+
+        String jti = jwtService.extractJti(token);
+        Instant expiration = jwtService.extractExpiration(token);
+        ProviderPrincipal extractedPrincipal = jwtService.extractPrincipal(token);
+
+        assertThat(jti).isNotBlank();
+        assertThat(expiration).isAfter(Instant.now());
+        assertThat(extractedPrincipal.id()).isEqualTo(principal.id());
+        assertThat(extractedPrincipal.name()).isEqualTo(principal.name());
+        assertThat(extractedPrincipal.email()).isEqualTo(principal.email());
+        assertThat(extractedPrincipal.slug()).isEqualTo(principal.slug());
+        assertThat(extractedPrincipal.timeZone()).isEqualTo(principal.timeZone());
+        assertThat(extractedPrincipal.passwordHash()).isNull();
     }
 
     @Test

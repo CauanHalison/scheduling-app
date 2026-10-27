@@ -42,7 +42,7 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("Should execute full auth flow: register -> login -> me -> refresh -> logout")
+    @DisplayName("Should execute full auth flow: register -> login -> me -> refresh -> logout -> reject blacklisted token")
     void shouldExecuteFullAuthnticationFlow() throws Exception {
         // REGISTER (201)
         RegisterProviderRequest registerProviderRequest = new RegisterProviderRequest(
@@ -111,13 +111,19 @@ class AuthControllerTest {
                 .content(objectMapper.writeValueAsString(refreshTokenRequest)))
                 .andExpect(status().isUnauthorized());
 
-        //Logout (204)
+        //Logout (204) - passing both Authorization header and RefreshToken body
         RefreshTokenRequest newRefreshTokenRequest = new RefreshTokenRequest(newTokens.refreshToken());
 
         mockMvc.perform(post("/auth/logout")
+                .header("Authorization", "Bearer " + newTokens.authToken())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newRefreshTokenRequest)))
                 .andExpect(status().isNoContent());
+
+        // ME after Logout with blacklisted JWT in Redis (401 Unauthorized)
+        mockMvc.perform(get("/auth/me")
+                .header("Authorization", "Bearer " + newTokens.authToken()))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

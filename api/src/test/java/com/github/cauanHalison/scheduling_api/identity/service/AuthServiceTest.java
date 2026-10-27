@@ -2,6 +2,7 @@ package com.github.cauanHalison.scheduling_api.identity.service;
 
 import com.github.cauanHalison.scheduling_api.config.security.JwtService;
 import com.github.cauanHalison.scheduling_api.config.security.ProviderPrincipal;
+import com.github.cauanHalison.scheduling_api.config.security.TokenBlacklistService;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.InvalidTokenException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
 import com.github.cauanHalison.scheduling_api.identity.domain.ProviderEntity;
@@ -52,6 +53,9 @@ public class AuthServiceTest {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -221,18 +225,24 @@ public class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Should revoke refresh token on logout")
-    void shouldRevokeTokenOnLogout() {
+    @DisplayName("Should revoke refresh token in database and blacklist access token in Redis on logout")
+    void shouldRevokeTokenAndBlacklistAccessTokenOnLogout() {
         RefreshTokenEntity activeToken = new RefreshTokenEntity();
         activeToken.setId(UUID.randomUUID());
         activeToken.setExpiresAt(Instant.now().plusSeconds(3600));
 
-        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(activeToken));
+        Instant accessTokenExpiresAt = Instant.now().plusSeconds(600);
+        String jti = UUID.randomUUID().toString();
 
-        authService.logout(new RefreshTokenRequest("raw-token"));
+        when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(activeToken));
+        when(jwtService.extractJti("valid-jwt")).thenReturn(jti);
+        when(jwtService.extractExpiration("valid-jwt")).thenReturn(accessTokenExpiresAt);
+
+        authService.logout("Bearer valid-jwt", new RefreshTokenRequest("raw-token"));
 
         assertThat(activeToken.isRevoked()).isTrue();
         verify(refreshTokenRepository).save(activeToken);
+        verify(tokenBlacklistService).blacklistToken(jti, accessTokenExpiresAt);
     }
 
     @Test

@@ -8,20 +8,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final CustomUserDetailsService userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(
@@ -38,15 +36,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            final String userId = jwtService.extractUsername(jwt);
+            final String jti = jwtService.extractJti(jwt);
 
-            if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = this.userDetailsService.loadUserById(UUID.fromString(userId));
+            if (tokenBlacklistService.isBlacklisted(jti)) {
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                ProviderPrincipal principal = jwtService.extractPrincipal(jwt);
 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
+                        principal,
                         null,
-                        userDetails.getAuthorities()
+                        principal.getAuthorities()
                 );
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
