@@ -21,6 +21,12 @@ public interface EventTypeControllerDocs {
     })
     ResponseEntity<List<EventTypeResponse>> findAll(@Parameter (hidden = true) ProviderPrincipal principal);
 
+    @Operation(summary = "Find by id", description = "Search for an event type by id from the authenticated provider")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Event type found")
+    })
+    ResponseEntity<EventTypeResponse> findById(@Parameter (hidden = true) ProviderPrincipal principal, UUID eventTypeId);
+
     @Operation(summary = "Create new event type", description = "Create a new event type linked to authenticated provider")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Event type created successfully")

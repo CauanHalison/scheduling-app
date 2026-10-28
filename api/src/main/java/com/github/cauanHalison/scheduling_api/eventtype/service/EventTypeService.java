@@ -110,4 +110,12 @@ public class EventTypeService {
                 eventTypeMapper::toResponse
         ).toList();
     }
+
+    @Transactional(readOnly = true)
+    public EventTypeResponse findById(UUID eventTypeId, UUID providerId) {
+        EventTypeEntity eventType = eventTypeRepository.findByIdAndProviderId(eventTypeId, providerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tipo de evento não encontrado."));
+
+        return eventTypeMapper.toResponse(eventType);
+    }
 }

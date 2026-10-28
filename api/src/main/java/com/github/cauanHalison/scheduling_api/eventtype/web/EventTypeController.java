@@ -30,6 +30,15 @@ public class EventTypeController implements EventTypeControllerDocs {
     }
 
     @Override
+    @GetMapping("/{eventTypeId}")
+    public ResponseEntity<EventTypeResponse> findById(
+            @AuthenticationPrincipal ProviderPrincipal principal,
+            @PathVariable (value = "eventTypeId") UUID eventTypeId
+    ) {
+        return ResponseEntity.ok(eventTypeService.findById(eventTypeId, principal.id()));
+    }
+
+    @Override
     @PostMapping
     public ResponseEntity<EventTypeResponse> create(
             @AuthenticationPrincipal ProviderPrincipal principal,
