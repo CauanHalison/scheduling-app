@@ -20,6 +20,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.UUID;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -56,7 +58,7 @@ class EventTypeControllerTest {
     }
 
     @Test
-    @DisplayName("Should execute full event type CRUD flow: create -> list -> update -> toggle -> delete")
+    @DisplayName("Should execute full event type CRUD flow: create -> list -> findById -> update -> toggle -> delete")
     void shouldExecuteFullEventTypeCrudFlow() throws Exception {
         // Create (201)
         EventTypeRequest request = new EventTypeRequest(
@@ -86,6 +88,18 @@ class EventTypeControllerTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].title").value("Event test"))
                 .andExpect(jsonPath("$[0].slug").value("event-test"));
+
+        // Find By Id (200)
+        mockMvc.perform(get("/event-types/{eventTypeId}", eventTypeResponse.id())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(eventTypeResponse.id().toString()))
+                .andExpect(jsonPath("$.title").value("Event test"))
+                .andExpect(jsonPath("$.slug").value("event-test"))
+                .andExpect(jsonPath("$.description").value("Event test description"))
+                .andExpect(jsonPath("$.durationMinutes").value(50))
+                .andExpect(jsonPath("$.bufferAfterMinutes").value(5))
+                .andExpect(jsonPath("$.isActive").value(true));
 
         // Update event type (200)
         EventTypeRequest updatedEvent = new EventTypeRequest(
@@ -120,6 +134,16 @@ class EventTypeControllerTest {
         mockMvc.perform(delete("/event-types/{eventTypeId}", eventTypeResponse.id())
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Should return 404 when finding a non-existent event type by id")
+    void shouldReturn404WhenFindingNonExistentEventTypeById() throws Exception {
+        mockMvc.perform(get("/event-types/{eventTypeId}", UUID.randomUUID())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value(404))
+                .andExpect(jsonPath("$.message").value("Tipo de evento não encontrado."));
     }
 
     @Test
@@ -180,7 +204,7 @@ class EventTypeControllerTest {
     }
 
     @Test
-    @DisplayName("Should return 404 when a provider tries to modify another provider's event type")
+    @DisplayName("Should return 404 when a provider tries to access or modify another provider's event type")
     void shouldReturn404WhenAccessingAnotherProviderEventType() throws Exception {
         EventTypeRequest request = new EventTypeRequest(
                 "Provider A Event",
@@ -204,6 +228,11 @@ class EventTypeControllerTest {
 
         ProviderEntity otherProvider = createAndSaveProvider("other@test.com", "other-provider-slug");
         String otherAccessToken = jwtService.generateToken(ProviderPrincipal.fromEntity(otherProvider));
+
+        mockMvc.perform(get("/event-types/{eventTypeId}", providerAEvent.id())
+                        .header("Authorization", "Bearer " + otherAccessToken))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value(404));
 
         mockMvc.perform(delete("/event-types/{eventTypeId}", providerAEvent.id())
                         .header("Authorization", "Bearer " + otherAccessToken))

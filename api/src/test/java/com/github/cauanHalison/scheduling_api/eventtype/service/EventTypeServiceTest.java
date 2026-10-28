@@ -240,6 +240,43 @@ class EventTypeServiceTest {
         assertThat(response.getFirst().slug()).isEqualTo(entity.getSlug());
     }
 
+    @Test
+    @DisplayName("Should find an event type by id from the authenticated provider")
+    void shouldFindEventTypeByIdSuccessfully() {
+        EventTypeEntity entity = createSampleEventType();
+
+        when(eventTypeRepository.findByIdAndProviderId(entity.getId(), authenticatedProvider.getId()))
+                .thenReturn(Optional.of(entity));
+
+        EventTypeResponse response = eventTypeService.findById(entity.getId(), authenticatedProvider.getId());
+
+        verify(eventTypeRepository).findByIdAndProviderId(entity.getId(), authenticatedProvider.getId());
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(entity.getId());
+        assertThat(response.title()).isEqualTo(entity.getTitle());
+        assertThat(response.slug()).isEqualTo(entity.getSlug());
+        assertThat(response.description()).isEqualTo(entity.getDescription());
+        assertThat(response.durationMinutes()).isEqualTo(entity.getDurationMinutes());
+        assertThat(response.bufferAfterMinutes()).isEqualTo(entity.getBufferAfterMinutes());
+        assertThat(response.isActive()).isEqualTo(entity.getIsActive());
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceNotFoundException when finding a non-existent event type by id")
+    void shouldThrowNotFoundWhenFindingNonExistentEventTypeById() {
+        UUID randomEventId = UUID.randomUUID();
+
+        when(eventTypeRepository.findByIdAndProviderId(randomEventId, authenticatedProvider.getId()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> eventTypeService.findById(randomEventId, authenticatedProvider.getId()))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Tipo de evento não encontrado.");
+
+        verify(eventTypeRepository).findByIdAndProviderId(randomEventId, authenticatedProvider.getId());
+    }
+
     private EventTypeEntity createSampleEventType() {
         EventTypeEntity entity = new EventTypeEntity();
         entity.setId(UUID.randomUUID());
