@@ -1,96 +1,63 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { queryClient } from "../lib/queryClient";
 import type { AuthRequest, ProviderResponse, RegisterProviderRequest } from "../types";
 import { getAuthToken, getRefreshToken, removeTokens } from "../service/api";
 import authService from "../service/authService";
+import { decodeToken } from "../utils/jwt";
 import { AuthContext } from "./authContextDef";
 
-export function AuthProvider({children}: {children: ReactNode}) {
-  const [provider, setProvider] = useState<ProviderResponse | null>(null)
-  const [loading, setLoading] = useState<boolean>(() => !!getAuthToken())
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [provider, setProvider] = useState<ProviderResponse | null>(() => {
+    const token = getAuthToken();
+    return token ? decodeToken(token) : null;
+  });
 
   const logout = useCallback(async () => {
-    const refreshToken = getRefreshToken()
+    const refreshToken = getRefreshToken();
     try {
       if (refreshToken) {
-        await authService.logout({ refreshToken })
+        await authService.logout({ refreshToken });
       }
     } finally {
-      removeTokens()
-      setProvider(null)
+      removeTokens();
+      setProvider(null);
+      queryClient.clear();
     }
-  }, [])
-
-  const refreshUser = useCallback(async () => {
-    const token = getAuthToken()
-    if(!token) {
-      setProvider(null)
-      return
-    }
-    try {
-      const currentProvider = await authService.getMe();
-      setProvider(currentProvider)
-    } catch {
-      await logout()
-      setProvider(null)
-    }
-  }, [logout])
+  }, []);
 
   useEffect(() => {
-    let active = true;
-
     const handleUnauthorized = () => {
-      if (active) {
-        removeTokens();
-        setProvider(null);
-      }
+      removeTokens();
+      setProvider(null);
+      queryClient.clear();
     };
 
-    window.addEventListener('auth:unauthorized', handleUnauthorized);
-
-    const token = getAuthToken();
-    if (!token) {
-      return () => {
-        active = false;
-        window.removeEventListener('auth:unauthorized', handleUnauthorized);
-      };
-    }
-
-    authService.getMe().then((currentProvider) => {
-      if(active) {
-        setProvider(currentProvider)
-      }
-    }).catch(() => {
-      if(active) {
-        logout()
-        setProvider(null)
-      }
-    }).finally(() => {
-      if (active) {
-        setLoading(false)
-      }
-    });
-
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
     return () => {
-      active = false;
-      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
     };
-  }, [logout])
+  }, []);
 
   const login = async (payload: AuthRequest) => {
-    await authService.login(payload);
-    const currentProvider = await authService.getMe();
-    setProvider(currentProvider);
-  }
+    const response = await authService.login(payload);
+    const user = decodeToken(response.authToken);
+    setProvider(user);
+  };
 
   const register = async (payload: RegisterProviderRequest) => {
-    await authService.register(payload)
-  }
+    await authService.register(payload);
+  };
+
+  const refreshUser = useCallback(async () => {
+    const token = getAuthToken();
+    setProvider(token ? decodeToken(token) : null);
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         provider,
-        loading,
+        loading: false,
         isAuthenticated: !!provider,
         login,
         register,
@@ -101,7 +68,6 @@ export function AuthProvider({children}: {children: ReactNode}) {
       {children}
     </AuthContext.Provider>
   );
-
 }
 
 export default AuthProvider;

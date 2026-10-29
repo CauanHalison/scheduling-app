@@ -53,3 +53,7 @@ nbbuild/
 dist/
 nbdist/
 .nb-gradle/
+
+# Documentos locais
+Scheduling_app_docs.md
+SRS_Sistema_de_Agendamento_Inteligente.md

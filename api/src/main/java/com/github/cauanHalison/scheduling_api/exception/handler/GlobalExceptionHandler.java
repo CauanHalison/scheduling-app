@@ -4,6 +4,7 @@ import com.github.cauanHalison.scheduling_api.exception.dto.ErrorField;
 import com.github.cauanHalison.scheduling_api.exception.dto.ErrorResponse;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.InvalidTokenException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
+import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +90,23 @@ public class GlobalExceptionHandler {
                         HttpStatus.FORBIDDEN.value(),
                         request.getRequestURI(),
                         "Você não tem permissão para acessar este recurso."
+                ));
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
+            ResourceNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Resource not found on route [{} {}] - IP [{}]: {}",
+                request.getMethod(), request.getRequestURI(), request.getRemoteAddr(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        HttpStatus.NOT_FOUND.value(),
+                        request.getRequestURI(),
+                        ex.getMessage()
                 ));
     }
 

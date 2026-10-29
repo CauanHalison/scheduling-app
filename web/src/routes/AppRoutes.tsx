@@ -1,6 +1,6 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks";
-import { DashboardPage, LoginPage } from "../pages";
+import { DashboardPage, EventTypesPage, LoginPage } from "../pages";
 
 interface LocationState {
   from?: {
@@ -58,11 +58,14 @@ export function AppRoutes() {
       </Route>
 
       <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard" element={<DashboardPage />}>
+          <Route index element={<EventTypesPage />} />
+          <Route path="event-types" element={<EventTypesPage />} />
+        </Route>
       </Route>
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }
