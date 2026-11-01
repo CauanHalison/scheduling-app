@@ -1,5 +1,6 @@
 package com.github.cauanHalison.scheduling_api.exception.handler;
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.github.cauanHalison.scheduling_api.exception.dto.ErrorField;
 import com.github.cauanHalison.scheduling_api.exception.dto.ErrorResponse;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.InvalidTokenException;
@@ -8,8 +9,10 @@ import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFo
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -17,13 +20,22 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    private static final Map<String, String> CONSTRAINT_MESSAGES = Map.of(
+            "uk_provider_email", "Este e-mail já está em uso.",
+            "uk_provider_slug", "Este slug já está em uso.",
+            "uk_event_type_provider_slug", "Este slug já está em uso.",
+            "excl_availability_schedule_no_overlap", "Os horários informados se sobrepõem a outro já cadastrado."
+    );
 
     @ExceptionHandler(BadCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
@@ -152,6 +164,93 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Malformed JSON or unreadable message on route [{} {}] - IP [{}]: {}",
+                request.getMethod(), request.getRequestURI(), request.getRemoteAddr(), ex.getMessage());
+
+        if (ex.getCause() instanceof InvalidFormatException invalidFormatEx) {
+            String fieldName = invalidFormatEx.getPath().stream()
+                    .map(ref -> ref.getFieldName())
+                    .reduce((first, second) -> second)
+                    .orElse("campo");
+
+            String invalidValue = String.valueOf(invalidFormatEx.getValue());
+            String targetType = invalidFormatEx.getTargetType().getSimpleName();
+
+            String message = String.format("O valor '%s' é inválido para o campo '%s' (tipo esperado: %s).",
+                    invalidValue, fieldName, targetType);
+
+            List<ErrorField> fieldErrors = List.of(new ErrorField(fieldName, message));
+
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(
+                            HttpStatus.BAD_REQUEST.value(),
+                            request.getRequestURI(),
+                            "Erro de validação nos campos informados.",
+                            fieldErrors
+                    ));
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        request.getRequestURI(),
+                        "Corpo da requisição mal formatado ou JSON com erro de sintaxe."
+                ));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request
+    ) {
+        String paramName = ex.getName();
+        String message = String.format("O parâmetro '%s' recebeu um valor inválido.", paramName);
+
+        log.warn("Type mismatch on param [{}] on route [{} {}] - IP [{}]: {}",
+                paramName, request.getMethod(), request.getRequestURI(), request.getRemoteAddr(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        request.getRequestURI(),
+                        message
+                ));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
+            DataIntegrityViolationException ex,
+            HttpServletRequest request
+    ) {
+        String rootMessage = ex.getMostSpecificCause().getMessage();
+
+        log.warn("Data integrity violation on route [{} {}] - IP [{}]: {}",
+                request.getMethod(), request.getRequestURI(), request.getRemoteAddr(), rootMessage);
+
+        String message = CONSTRAINT_MESSAGES.entrySet().stream()
+                .filter(entry -> rootMessage != null && rootMessage.contains(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse("A operação conflita com dados já existentes.");
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        HttpStatus.CONFLICT.value(),
+                        request.getRequestURI(),
+                        message
+                ));
+    }
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<ErrorResponse> handleException(Exception ex, HttpServletRequest request) {
