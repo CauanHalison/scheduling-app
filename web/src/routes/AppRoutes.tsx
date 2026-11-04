@@ -1,6 +1,6 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks";
-import { DashboardPage, EventTypesPage, LoginPage } from "../pages";
+import { DashboardPage, EventTypesPage, LoginPage, SchedulePage } from "../pages";
 
 interface LocationState {
   from?: {
@@ -61,6 +61,7 @@ export function AppRoutes() {
         <Route path="/dashboard" element={<DashboardPage />}>
           <Route index element={<EventTypesPage />} />
           <Route path="event-types" element={<EventTypesPage />} />
+          <Route path="schedules" element={<SchedulePage />} />
         </Route>
       </Route>
 

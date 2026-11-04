@@ -32,6 +32,15 @@ export function Navbar() {
           >
             Tipos de Eventos
           </NavLink>
+
+          <NavLink
+            to="/dashboard/schedules"
+            className={({ isActive }) =>
+              `nav-link ${isActive ? "active" : ""}`
+            }
+          >
+            Disponibilidade
+          </NavLink>
         </nav>
 
         <div className="navbar-user">
@@ -50,4 +59,3 @@ export function Navbar() {
 }
 
 export default Navbar;
-
