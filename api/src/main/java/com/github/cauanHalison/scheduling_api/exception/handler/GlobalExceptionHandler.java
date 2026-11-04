@@ -1,5 +1,6 @@
 package com.github.cauanHalison.scheduling_api.exception.handler;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.github.cauanHalison.scheduling_api.exception.dto.ErrorField;
 import com.github.cauanHalison.scheduling_api.exception.dto.ErrorResponse;
@@ -34,7 +35,8 @@ public class GlobalExceptionHandler {
             "uk_provider_email", "Este e-mail já está em uso.",
             "uk_provider_slug", "Este slug já está em uso.",
             "uk_event_type_provider_slug", "Este slug já está em uso.",
-            "excl_availability_schedule_no_overlap", "Os horários informados se sobrepõem a outro já cadastrado."
+            "excl_availability_schedule_no_overlap", "Os horários informados se sobrepõem a outro já cadastrado.",
+            "excl_schedule_override_no_overlap", "Já existe um bloqueio de agenda que se sobrepõe ao período informado."
     );
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -175,7 +177,7 @@ public class GlobalExceptionHandler {
 
         if (ex.getCause() instanceof InvalidFormatException invalidFormatEx) {
             String fieldName = invalidFormatEx.getPath().stream()
-                    .map(ref -> ref.getFieldName())
+                    .map(JsonMappingException.Reference::getFieldName)
                     .reduce((first, second) -> second)
                     .orElse("campo");
 

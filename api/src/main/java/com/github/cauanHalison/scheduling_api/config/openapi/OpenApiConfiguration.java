@@ -7,7 +7,11 @@ import io.swagger.v3.oas.annotations.info.Contact;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.models.media.Schema;
+import org.springdoc.core.utils.SpringDocUtils;
 import org.springframework.context.annotation.Configuration;
+
+import java.time.LocalTime;
 
 @Configuration
 @OpenAPIDefinition(
@@ -33,4 +37,13 @@ import org.springframework.context.annotation.Configuration;
         in = SecuritySchemeIn.HEADER
 )
 public class OpenApiConfiguration {
+    static {
+        SpringDocUtils.getConfig().replaceWithSchema(
+                LocalTime.class,
+                new Schema<LocalTime>()
+                        .type("string")
+                        .pattern("^([01]\\d|2[0-3]):[0-5]\\d$")
+                        .example("08:00")
+        );
+    }
 }
