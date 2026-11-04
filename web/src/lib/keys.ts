@@ -11,6 +11,8 @@ export const queryKeys = {
   },
   schedule: {
     all: ["schedule"] as const,
+    weekly: () => ["schedule", "weekly"] as const,
+    overrides: () => ["schedule", "overrides"] as const,
   },
   days: {
     all: ["days"] as const,
