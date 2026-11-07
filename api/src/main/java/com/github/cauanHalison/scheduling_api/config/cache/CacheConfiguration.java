@@ -8,8 +8,10 @@ import com.github.cauanHalison.scheduling_api.eventtype.dto.EventTypeResponse;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -22,6 +24,8 @@ import java.util.List;
 public class CacheConfiguration {
 
     public static final String EVENT_TYPES_CACHE = "event-types";
+    public static final String AVAILABLE_SLOTS_CACHE = "available-slots";
+    public static final String AVAILABLE_DAYS_CACHE = "available-days";
 
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
@@ -35,14 +39,20 @@ public class CacheConfiguration {
         Jackson2JsonRedisSerializer<List<EventTypeResponse>> eventTypesSerializer =
                 new Jackson2JsonRedisSerializer<>(objectMapper, eventTypeListType);
 
-        org.springframework.data.redis.cache.RedisCacheConfiguration eventTypesCacheConfig =
-                org.springframework.data.redis.cache.RedisCacheConfiguration.defaultCacheConfig()
-                        .entryTtl(Duration.ofMinutes(30))
-                        .disableCachingNullValues()
-                        .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(eventTypesSerializer));
+        RedisCacheConfiguration defaultCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(15))
+                .disableCachingNullValues()
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer(objectMapper)));
+
+        RedisCacheConfiguration eventTypesCacheConfig = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(30))
+                .disableCachingNullValues()
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(eventTypesSerializer));
 
         return RedisCacheManager.builder(connectionFactory)
+                .cacheDefaults(defaultCacheConfig)
                 .withCacheConfiguration(EVENT_TYPES_CACHE, eventTypesCacheConfig)
                 .build();
     }
