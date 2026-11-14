@@ -2,3 +2,8 @@ export * from "./LoginPage";
 export * from "./DashboardPage";
 export * from "./EventTypePages";
 export * from "./SchedulePage";
+export * from "./ProviderBookingsPage";
+export * from "./GuestBookingPage";
+export * from "./GuestMagicLinkPage";
+export * from "./PublicBookingPage";
+export * from "./PublicProviderCatalog";

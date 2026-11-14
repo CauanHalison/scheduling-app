@@ -1,6 +1,7 @@
 package com.github.cauanHalison.scheduling_api.eventtype.repository;
 
 import com.github.cauanHalison.scheduling_api.eventtype.domain.EventTypeEntity;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -12,4 +13,10 @@ public interface EventTypeRepository extends JpaRepository<EventTypeEntity, UUID
     Optional<EventTypeEntity> findByIdAndProviderId(UUID id, UUID providerId);
     boolean existsByProviderIdAndSlug(UUID providerId, String slug);
     boolean existsByProviderIdAndSlugAndIdNot(UUID providerId, String slug, UUID id);
+
+    @EntityGraph(attributePaths = {"provider"})
+    Optional<EventTypeEntity> findByProviderSlugAndSlugAndIsActiveTrue(String providerSlug, String slug);
+
+    @EntityGraph(attributePaths = {"provider"})
+    List<EventTypeEntity> findAllByProviderSlugAndIsActiveTrueOrderByCreatedAtDesc(String providerSlug);
 }

@@ -10,10 +10,12 @@ import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFo
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.time.DateTimeException;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +39,8 @@ public class GlobalExceptionHandler {
             "uk_provider_slug", "Este slug já está em uso.",
             "uk_event_type_provider_slug", "Este slug já está em uso.",
             "excl_availability_schedule_no_overlap", "Os horários informados se sobrepõem a outro já cadastrado.",
-            "excl_schedule_override_no_overlap", "Já existe um bloqueio de agenda que se sobrepõe ao período informado."
+            "excl_schedule_override_no_overlap", "Já existe um bloqueio de agenda que se sobrepõe ao período informado.",
+            "excl_booking_no_overlap", "Este horário acabou de ser reservado por outra pessoa."
     );
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -141,6 +145,40 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorResponse> handleObjectOptimisticLockingFailureException(
+            ObjectOptimisticLockingFailureException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Optimistic locking conflict on route [{} {}] - IP [{}]: {}",
+                request.getMethod(), request.getRequestURI(), request.getRemoteAddr(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        HttpStatus.CONFLICT.value(),
+                        request.getRequestURI(),
+                        "Este agendamento foi atualizado simultaneamente. Tente novamente."
+                ));
+    }
+
+    @ExceptionHandler(CannotAcquireLockException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorResponse> handleCannotAcquireLockException(
+            CannotAcquireLockException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Lock acquisition / concurrency conflict on route [{} {}] - IP [{}]: {}",
+                request.getMethod(), request.getRequestURI(), request.getRemoteAddr(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        HttpStatus.CONFLICT.value(),
+                        request.getRequestURI(),
+                        "Este horário acabou de ser reservado por outra pessoa."
+                ));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
@@ -228,6 +266,23 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(DateTimeException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<ErrorResponse> handleDateTimeException(
+            DateTimeException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Invalid date/time or timezone on route [{} {}] - IP [{}]: {}",
+                request.getMethod(), request.getRequestURI(), request.getRemoteAddr(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        request.getRequestURI(),
+                        "O fuso horário, mês ou data informado é inválido."
+                ));
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
@@ -253,6 +308,7 @@ public class GlobalExceptionHandler {
                         message
                 ));
     }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<ErrorResponse> handleException(Exception ex, HttpServletRequest request) {

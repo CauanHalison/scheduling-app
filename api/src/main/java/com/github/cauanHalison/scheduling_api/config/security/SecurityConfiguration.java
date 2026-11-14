@@ -68,6 +68,7 @@ public class SecurityConfiguration {
                                 "/actuator/info"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
+                        .requestMatchers("/public/**", "/guest/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
