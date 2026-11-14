@@ -1,21 +1,27 @@
 import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { EventTypeModal } from "../components";
-import { useDeleteEventType, useEventType, useEventTypes, useToggleEventType } from "../hooks";
+import {
+  useAuth,
+  useDeleteEventType,
+  useEventType,
+  useEventTypes,
+  useToggleEventType,
+} from "../hooks";
 import type { EventTypeResponse } from "../types/eventType";
 import "./styles/EventTypePages.css";
 
 export function EventTypesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { provider } = useAuth();
 
-  // Lê os query params da URL: ?modal=create ou ?modal=edit&id=123
-  const modalAction = searchParams.get("modal"); // "create" | "edit" | null
+  const modalAction = searchParams.get("modal"); 
   const editingId = searchParams.get("id") || "";
 
   const { data: eventTypes, isLoading, isError } = useEventTypes();
   const toggleMutation = useToggleEventType();
   const deleteMutation = useDeleteEventType();
 
-  // Se houver editingId na URL, busca/lê do cache com useEventType
   const { data: editingEvent } = useEventType(editingId);
 
   const handleOpenCreate = () => {
@@ -31,6 +37,22 @@ export function EventTypesPage() {
     nextParams.delete("modal");
     nextParams.delete("id");
     setSearchParams(nextParams);
+  };
+
+  const handleCopyPublicLink = async (eventSlug: string) => {
+    if (!provider?.slug) {
+      toast.error("Não foi possível identificar o seu link público.");
+      return;
+    }
+
+    const publicUrl = `${window.location.origin}/users/${provider.slug}/events/${eventSlug}`;
+
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.success("Link público copiado!");
+    } catch {
+      toast.error("Não foi possível copiar o link.");
+    }
   };
 
   const handleDelete = (eventTypeId: string, title: string) => {
@@ -94,12 +116,21 @@ export function EventTypesPage() {
 
               <div className="card-actions">
                 <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => handleCopyPublicLink(event.slug)}
+                >
+                  Copiar link
+                </button>
+                <button
+                  type="button"
                   className="btn-link"
                   onClick={() => handleOpenEdit(event)}
                 >
                   Editar
                 </button>
                 <button
+                  type="button"
                   className="btn-danger"
                   onClick={() => handleDelete(event.id, event.title)}
                   disabled={deleteMutation.isPending}
