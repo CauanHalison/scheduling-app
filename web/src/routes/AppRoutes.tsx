@@ -1,6 +1,16 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks";
-import { DashboardPage, EventTypesPage, LoginPage, SchedulePage } from "../pages";
+import {
+  DashboardPage,
+  EventTypesPage,
+  GuestBookingPage,
+  GuestMagicLinkPage,
+  LoginPage,
+  ProviderBookingsPage,
+  PublicBookingPage,
+  PublicProviderCatalog,
+  SchedulePage,
+} from "../pages";
 
 interface LocationState {
   from?: {
@@ -57,9 +67,15 @@ export function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
       </Route>
 
+      <Route path="/users/:userSlug/events" element={<PublicProviderCatalog />} />
+      <Route path="/users/:userSlug/events/:eventSlug" element={<PublicBookingPage />} />
+      <Route path="/guest/bookings/:cancelToken" element={<GuestBookingPage />} />
+      <Route path="/guest/magic-link" element={<GuestMagicLinkPage />} />
+
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardPage />}>
-          <Route index element={<EventTypesPage />} />
+          <Route index element={<ProviderBookingsPage />} />
+          <Route path="bookings" element={<ProviderBookingsPage />} />
           <Route path="event-types" element={<EventTypesPage />} />
           <Route path="schedules" element={<SchedulePage />} />
         </Route>
