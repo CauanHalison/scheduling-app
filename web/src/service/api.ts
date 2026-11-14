@@ -53,7 +53,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // Se a requisição foi cancelada propositalmente (AbortController / signal), ignora
     if (axios.isCancel(error)) {
       return Promise.reject(error);
     }
@@ -66,7 +65,6 @@ api.interceptors.response.use(
       requestUrl.includes("/auth/logout") ||
       requestUrl.includes("/auth/refresh");
 
-    // Tratamento de Refresh Token para 401
     if (error?.response?.status === 401 && !isAuthRoute && !originalRequest?._retry) {
       originalRequest._retry = true;
 
@@ -96,7 +94,6 @@ api.interceptors.response.use(
       }
     }
 
-    // Tratamento de erros globais (Rede / Timeout / Servidor 5xx)
     const status = error?.response?.status;
 
     if (!error.response) {
