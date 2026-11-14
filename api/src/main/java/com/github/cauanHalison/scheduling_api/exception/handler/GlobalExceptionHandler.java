@@ -10,6 +10,7 @@ import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFo
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -158,6 +159,23 @@ public class GlobalExceptionHandler {
                         HttpStatus.CONFLICT.value(),
                         request.getRequestURI(),
                         "Este agendamento foi atualizado simultaneamente. Tente novamente."
+                ));
+    }
+
+    @ExceptionHandler(CannotAcquireLockException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorResponse> handleCannotAcquireLockException(
+            CannotAcquireLockException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Lock acquisition / concurrency conflict on route [{} {}] - IP [{}]: {}",
+                request.getMethod(), request.getRequestURI(), request.getRemoteAddr(), ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        HttpStatus.CONFLICT.value(),
+                        request.getRequestURI(),
+                        "Este horário acabou de ser reservado por outra pessoa."
                 ));
     }
 
