@@ -82,7 +82,7 @@ class SlotCalculationServiceTest {
         mondaySchedule.setProvider(provider);
         mondaySchedule.setDayOfWeek(DayOfWeek.MONDAY);
         mondaySchedule.setStartTime(LocalTime.of(9, 0));
-        mondaySchedule.setEndTime(LocalTime.of(10, 0)); // 60 min -> deve gerar 2 slots de 30 min (09:00 e 09:30)
+        mondaySchedule.setEndTime(LocalTime.of(10, 0)); 
 
         when(eventTypeRepository.findByProviderSlugAndSlugAndIsActiveTrue("provider-slug", "consultoria-30min"))
                 .thenReturn(Optional.of(eventType));
@@ -112,9 +112,8 @@ class SlotCalculationServiceTest {
         mondaySchedule.setProvider(provider);
         mondaySchedule.setDayOfWeek(DayOfWeek.MONDAY);
         mondaySchedule.setStartTime(LocalTime.of(9, 0));
-        mondaySchedule.setEndTime(LocalTime.of(12, 0)); // 09:00 as 12:00
+        mondaySchedule.setEndTime(LocalTime.of(12, 0)); 
 
-        // Bloqueio das 10:00 as 11:00
         ScheduleOverrideEntity override = new ScheduleOverrideEntity();
         override.setProvider(provider);
         override.setStartTime(futureMonday.atTime(10, 0).atZone(providerZone).toInstant());
@@ -128,7 +127,6 @@ class SlotCalculationServiceTest {
 
         AvailableSlotsResponse response = slotCalculationService.getAvailableSlots("provider-slug", "consultoria-30min", futureMonday, providerZone);
 
-        // Turno 9-10 (2 slots: 09:00, 09:30) + Turno 11-12 (2 slots: 11:00, 11:30) = 4 slots
         assertThat(response.slots()).hasSize(4);
 
         Instant tenAm = futureMonday.atTime(10, 0).atZone(providerZone).toInstant();
@@ -146,7 +144,6 @@ class SlotCalculationServiceTest {
         mondaySchedule.setStartTime(LocalTime.of(9, 0));
         mondaySchedule.setEndTime(LocalTime.of(10, 30));
 
-        // Reserva das 09:00 as 09:30 com 10 min de buffer -> bloqueado ate 09:40
         BookingEntity existingBooking = new BookingEntity();
         existingBooking.setStartTime(futureMonday.atTime(9, 0).atZone(providerZone).toInstant());
         existingBooking.setEndTime(futureMonday.atTime(9, 30).atZone(providerZone).toInstant());
@@ -161,7 +158,6 @@ class SlotCalculationServiceTest {
 
         AvailableSlotsResponse response = slotCalculationService.getAvailableSlots("provider-slug", "consultoria-30min", futureMonday, providerZone);
 
-        // Resta de 09:40 as 10:30 (50 min). Como o slot dura 30 min, cabe 1 slot (09:40 as 10:10).
         assertThat(response.slots()).hasSize(1);
         Instant expectedSlot = futureMonday.atTime(9, 40).atZone(providerZone).toInstant();
         assertThat(response.slots().getFirst().startTime()).isEqualTo(expectedSlot);

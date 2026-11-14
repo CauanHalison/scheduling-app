@@ -16,6 +16,7 @@ import com.github.cauanHalison.scheduling_api.identity.domain.ProviderEntity;
 import com.github.cauanHalison.scheduling_api.identity.repository.ProviderRepository;
 import com.github.cauanHalison.scheduling_api.schedule.domain.AvailabilityScheduleEntity;
 import com.github.cauanHalison.scheduling_api.schedule.repository.AvailabilityScheduleRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -100,6 +101,14 @@ class BookingIntegrationTest {
         eventType.setBufferAfterMinutes(15);
         eventType.setIsActive(true);
         eventType = eventTypeRepository.save(eventType);
+    }
+
+    @AfterEach
+    void tearDown() {
+        bookingRepository.deleteAll();
+        availabilityScheduleRepository.deleteAll();
+        eventTypeRepository.deleteAll();
+        providerRepository.deleteAll();
     }
 
     @Test
@@ -192,7 +201,7 @@ class BookingIntegrationTest {
             futures.add(executor.submit(() -> {
                 try {
                     readyLatch.countDown();
-                    startLatch.await(); // Dispara todos simultaneamente
+                    startLatch.await();
 
                     CreateBookingRequest request = new CreateBookingRequest(
                             "Client " + index, "client" + index + "@test.com", targetSlot
@@ -215,14 +224,13 @@ class BookingIntegrationTest {
         }
 
         readyLatch.await();
-        startLatch.countDown(); // Start all threads together
+        startLatch.countDown(); 
 
         for (Future<?> f : futures) {
             f.get();
         }
         executor.shutdown();
 
-        // Strict assertion: exactly 1 booking succeeded, all others rejected with 409 Conflict
         assertThat(successCount.get()).isEqualTo(1);
         assertThat(conflictCount.get()).isEqualTo(numberOfConcurrentRequests - 1);
         assertThat(bookingRepository.count()).isEqualTo(1);
@@ -242,17 +250,14 @@ class BookingIntegrationTest {
         directBooking.setStatus(BookingStatus.CONFIRMED);
         bookingRepository.save(directBooking);
 
-        // Request magic link
         mockMvc.perform(post("/guest/magic-link/request")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new MagicLinkRequest("maria@test.com"))))
                 .andExpect(status().isOk());
 
-        // In test, simulate finding the token stored in redis for maria@test.com
         String testToken = UUID.randomUUID().toString();
         redisTemplate.opsForValue().set("guest:magic-link:" + testToken, "maria@test.com", Duration.ofMinutes(15));
 
-        // Verify magic link
         mockMvc.perform(get("/guest/magic-link/verify")
                         .param("token", testToken))
                 .andExpect(status().isOk())
