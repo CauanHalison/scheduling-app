@@ -52,6 +52,9 @@ public class BookingEntity {
     @Column(name = "cancellation_reason", length = 500)
     private String cancellationReason;
 
+    @Column(name = "reminder_sent_at")
+    private Instant reminderSentAt;
+
     @Version
     @Column(name = "version", nullable = false)
     private Long version;
