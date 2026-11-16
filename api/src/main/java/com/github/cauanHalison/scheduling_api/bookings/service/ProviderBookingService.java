@@ -10,10 +10,14 @@ import com.github.cauanHalison.scheduling_api.bookings.repository.BookingSpecifi
 import com.github.cauanHalison.scheduling_api.config.cache.CacheConfiguration;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFoundException;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingNotificationEvents.*;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingSnapshot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -29,6 +33,7 @@ public class ProviderBookingService {
 
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public Page<ProviderBookingResponse> listBookings(
@@ -41,8 +46,9 @@ public class ProviderBookingService {
         log.debug("Listing bookings for provider: providerId={}, status={}, startDate={}, endDate={}, page={}",
                 providerId, status, startDate, endDate, pageable.getPageNumber());
 
-        Specification<BookingEntity> spec = BookingSpecifications.withFilters(providerId, status, startDate, endDate);
-        Page<BookingEntity> bookingsPage = bookingRepository.findAll(spec, pageable);
+        Specification<BookingEntity> spec = BookingSpecifications.withFilters(providerId, status, startDate, endDate, pageable.getSort());
+        Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        Page<BookingEntity> bookingsPage = bookingRepository.findAll(spec, unsortedPageable);
 
         log.info("Bookings listed for provider: providerId={}, totalElements={}, totalPages={}",
                 providerId, bookingsPage.getTotalElements(), bookingsPage.getTotalPages());
@@ -82,6 +88,8 @@ public class ProviderBookingService {
 
         booking.setStatus(BookingStatus.CANCELED);
         booking.setCancellationReason(reason);
+
+        eventPublisher.publishEvent(new BookingCanceledEvent(BookingSnapshot.from(booking)));
 
         log.info("Booking canceled by provider: id={}, providerId={}, reason='{}'",
                 booking.getId(), providerId, reason);
