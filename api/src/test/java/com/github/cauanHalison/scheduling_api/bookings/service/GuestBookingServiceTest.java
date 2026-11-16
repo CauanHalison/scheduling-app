@@ -11,15 +11,20 @@ import com.github.cauanHalison.scheduling_api.eventtype.domain.EventTypeEntity;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.InvalidTokenException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFoundException;
+import com.github.cauanHalison.scheduling_api.exception.exceptions.TooManyRequestsException;
 import com.github.cauanHalison.scheduling_api.identity.domain.ProviderEntity;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingNotificationEvents.*;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingSnapshot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
@@ -33,7 +38,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,10 +51,16 @@ class GuestBookingServiceTest {
     private BookingRepository bookingRepository;
 
     @Mock
+    private MagicLinkRateLimiter magicLinkRateLimiter;
+
+    @Mock
     private StringRedisTemplate redisTemplate;
 
     @Mock
     private ValueOperations<String, String> valueOperations;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @Spy
     private BookingMapper bookingMapper = new BookingMapper();
@@ -63,6 +77,7 @@ class GuestBookingServiceTest {
     void setUp() {
         provider = new ProviderEntity();
         provider.setName("Provider Name");
+        provider.setEmail("provider@test.com");
 
         eventType = new EventTypeEntity();
         eventType.setTitle("Mentoria");
@@ -107,18 +122,56 @@ class GuestBookingServiceTest {
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELED);
         assertThat(booking.getCancellationReason()).isEqualTo("Imprevisto pessoal");
         assertThat(response.status()).isEqualTo(BookingStatus.CANCELED);
+
+        ArgumentCaptor<BookingCanceledEvent> captor = ArgumentCaptor.forClass(BookingCanceledEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+
+        BookingSnapshot snapshot = captor.getValue().booking();
+        assertThat(snapshot.bookingId()).isEqualTo(booking.getId());
+        assertThat(snapshot.providerEmail()).isEqualTo("provider@test.com");
+        assertThat(snapshot.clientEmail()).isEqualTo("client@test.com");
+        assertThat(snapshot.cancellationReason()).isEqualTo("Imprevisto pessoal");
     }
 
     @Test
     @DisplayName("Should store magic link in redis with 15min TTL")
     void shouldStoreMagicLinkInRedis() {
+        when(bookingRepository.existsByClientEmailIgnoreCase("user@example.com")).thenReturn(true);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
-        guestBookingService.requestMagicLink(new MagicLinkRequest("User@Example.com"));
+        guestBookingService.requestMagicLink(new MagicLinkRequest("User@Example.com"), "203.0.113.7");
 
+        ArgumentCaptor<MagicLinkRequestedEvent> captor = ArgumentCaptor.forClass(MagicLinkRequestedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().email()).isEqualTo("user@example.com");
+        assertThat(captor.getValue().token()).isNotBlank();
         verify(valueOperations).set(any(String.class), eq("user@example.com"), eq(Duration.ofMinutes(15)));
+        verify(magicLinkRateLimiter).check("user@example.com", "203.0.113.7");
     }
 
+    @Test
+    @DisplayName("Should not store token nor publish event when email has no bookings")
+    void shouldNotSendMagicLinkWhenEmailHasNoBookings() {
+        when(bookingRepository.existsByClientEmailIgnoreCase("ghost@example.com")).thenReturn(false);
+
+        guestBookingService.requestMagicLink(new MagicLinkRequest("Ghost@Example.com"), "203.0.113.7");
+
+        verify(magicLinkRateLimiter).check("ghost@example.com", "203.0.113.7");
+        verifyNoInteractions(redisTemplate, eventPublisher);
+    }
+
+    @Test
+    @DisplayName("Should propagate TooManyRequestsException and do nothing else when rate limit is exceeded")
+    void shouldStopWhenRateLimitExceeded() {
+        doThrow(new TooManyRequestsException("limit", 60))
+                .when(magicLinkRateLimiter).check(anyString(), anyString());
+
+        assertThatThrownBy(() -> guestBookingService.requestMagicLink(
+                new MagicLinkRequest("user@example.com"), "203.0.113.7"))
+                .isInstanceOf(TooManyRequestsException.class);
+
+        verifyNoInteractions(bookingRepository, redisTemplate, eventPublisher);
+    }
     @Test
     @DisplayName("Should verify magic link and return bookings for valid token")
     void shouldVerifyMagicLinkAndReturnBookings() {
