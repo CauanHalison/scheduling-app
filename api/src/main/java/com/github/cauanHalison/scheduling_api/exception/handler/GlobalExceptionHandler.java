@@ -7,6 +7,7 @@ import com.github.cauanHalison.scheduling_api.exception.dto.ErrorResponse;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.InvalidTokenException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFoundException;
+import com.github.cauanHalison.scheduling_api.exception.exceptions.TooManyRequestsException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,6 +146,23 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public ResponseEntity<ErrorResponse> handleTooManyRequestsException(
+            TooManyRequestsException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Rate limit exceeded on route [{} {}] - IP [{}]",
+                request.getMethod(), request.getRequestURI(), request.getRemoteAddr());
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+                .body(new ErrorResponse(
+                        HttpStatus.TOO_MANY_REQUESTS.value(),
+                        request.getRequestURI(),
+                        ex.getMessage()
+                ));
+    }
     @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ResponseEntity<ErrorResponse> handleObjectOptimisticLockingFailureException(

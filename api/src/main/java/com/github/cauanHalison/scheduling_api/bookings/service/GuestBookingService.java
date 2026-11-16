@@ -11,9 +11,12 @@ import com.github.cauanHalison.scheduling_api.config.cache.CacheConfiguration;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.InvalidTokenException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFoundException;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingNotificationEvents.*;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingSnapshot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +36,8 @@ public class GuestBookingService {
     private final BookingRepository bookingRepository;
     private final BookingMapper bookingMapper;
     private final StringRedisTemplate redisTemplate;
+    private final ApplicationEventPublisher eventPublisher;
+    private final MagicLinkRateLimiter magicLinkRateLimiter;
 
     @Transactional(readOnly = true)
     public GuestBookingResponse getBookingByCancelToken(UUID cancelToken) {
@@ -67,20 +72,32 @@ public class GuestBookingService {
         booking.setStatus(BookingStatus.CANCELED);
         booking.setCancellationReason(reason);
 
+        eventPublisher.publishEvent(new BookingCanceledEvent(BookingSnapshot.from(booking)));
+
         log.info("Booking canceled by guest: id={}, providerId={}, reason='{}'",
                 booking.getId(), booking.getProvider().getId(), reason);
 
         return bookingMapper.toGuestResponse(booking);
     }
 
-    public void requestMagicLink(MagicLinkRequest request) {
+    public void requestMagicLink(MagicLinkRequest request, String clientIp) {
         String normalizedEmail = request.email().trim().toLowerCase();
+
+        magicLinkRateLimiter.check(normalizedEmail, clientIp);
+
+        if (!bookingRepository.existsByClientEmailIgnoreCase(normalizedEmail)) {
+            log.info("Magic link requested for email without bookings");
+            return;
+        }
+
         String magicToken = UUID.randomUUID().toString();
 
         redisTemplate.opsForValue().set(MAGIC_LINK_PREFIX + magicToken, normalizedEmail, MAGIC_LINK_TTL);
 
-        log.info("Magic link token generated: email={}, token={}, ttlMinutes={}",
-                normalizedEmail, magicToken, MAGIC_LINK_TTL.toMinutes());
+        eventPublisher.publishEvent(new MagicLinkRequestedEvent(normalizedEmail, magicToken));
+
+        log.info("Magic link requested: ttlMinutes={}",
+                MAGIC_LINK_TTL.toMinutes());
     }
 
     @Transactional(readOnly = true)
@@ -91,21 +108,21 @@ public class GuestBookingService {
 
         String email = redisTemplate.opsForValue().get(MAGIC_LINK_PREFIX + token);
         if (email == null) {
-            log.warn("Magic link verification failed - expired or invalid token: token={}", token);
+            log.warn("Magic link verification failed - expired or invalid token");
             throw new InvalidTokenException("Link de acesso expirado ou inválido.");
         }
 
-        log.info("Magic link verified successfully for email: email={}", email);
+        log.info("Magic link verified successfully");
         return listBookingsByClientEmail(email);
     }
 
     @Transactional(readOnly = true)
     public List<GuestBookingResponse> listBookingsByClientEmail(String clientEmail) {
-        log.debug("Listing bookings by client email: email={}", clientEmail);
+        log.debug("Listing bookings by client email");
 
         List<BookingEntity> bookings = bookingRepository.findAllByClientEmailIgnoreCaseOrderByStartTimeDesc(clientEmail);
 
-        log.info("Bookings retrieved for guest email: email={}, count={}", clientEmail, bookings.size());
+        log.info("Bookings retrieved for guest email: count={}", bookings.size());
 
         return bookings.stream()
                 .map(bookingMapper::toGuestResponse)

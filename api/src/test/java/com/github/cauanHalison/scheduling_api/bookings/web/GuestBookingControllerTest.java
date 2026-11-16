@@ -7,6 +7,7 @@ import com.github.cauanHalison.scheduling_api.bookings.dto.GuestBookingResponse;
 import com.github.cauanHalison.scheduling_api.bookings.dto.MagicLinkRequest;
 import com.github.cauanHalison.scheduling_api.bookings.service.GuestBookingService;
 import com.github.cauanHalison.scheduling_api.config.security.JwtAuthenticationFilter;
+import com.github.cauanHalison.scheduling_api.exception.exceptions.TooManyRequestsException;
 import com.github.cauanHalison.scheduling_api.config.security.JwtService;
 import com.github.cauanHalison.scheduling_api.config.security.TokenBlacklistService;
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +24,9 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -101,7 +105,21 @@ class GuestBookingControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        verify(guestBookingService).requestMagicLink(any(MagicLinkRequest.class));
+        verify(guestBookingService).requestMagicLink(any(MagicLinkRequest.class), anyString());
+    }
+
+    @Test
+    @DisplayName("Should return 429 with Retry-After header when magic link rate limit is exceeded")
+    void shouldReturn429WhenMagicLinkRateLimited() throws Exception {
+        doThrow(new TooManyRequestsException("Muitas solicitações.", 120))
+                .when(guestBookingService).requestMagicLink(any(MagicLinkRequest.class), anyString());
+
+        mockMvc.perform(post("/guest/magic-link/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new MagicLinkRequest("carlos@gmail.com"))))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string("Retry-After", "120"))
+                .andExpect(jsonPath("$.statusCode").value(429));
     }
 
     @Test

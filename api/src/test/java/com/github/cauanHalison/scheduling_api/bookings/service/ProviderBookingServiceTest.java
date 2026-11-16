@@ -10,14 +10,18 @@ import com.github.cauanHalison.scheduling_api.eventtype.domain.EventTypeEntity;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFoundException;
 import com.github.cauanHalison.scheduling_api.identity.domain.ProviderEntity;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingNotificationEvents;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingSnapshot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -33,14 +37,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProviderBookingServiceTest {
 
     @Mock
     private BookingRepository bookingRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @Spy
     private BookingMapper bookingMapper = new BookingMapper();
@@ -57,6 +63,7 @@ class ProviderBookingServiceTest {
         provider = new ProviderEntity();
         provider.setId(UUID.randomUUID());
         provider.setName("Provider Test");
+        provider.setEmail("provider@test.com");
 
         eventType = new EventTypeEntity();
         eventType.setId(UUID.randomUUID());
@@ -101,9 +108,18 @@ class ProviderBookingServiceTest {
                 provider.getId(), booking.getId(), new CancelBookingRequest("Prestador doente")
         );
 
+        ArgumentCaptor<BookingNotificationEvents.BookingCanceledEvent> captor = ArgumentCaptor.forClass(BookingNotificationEvents.BookingCanceledEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+
+        BookingSnapshot snapshot = captor.getValue().booking();
+
+        assertThat(snapshot.providerName()).isEqualTo("Provider Test");
+        assertThat(snapshot.providerEmail()).isEqualTo("provider@test.com");
+        assertThat(snapshot.cancellationReason()).isEqualTo("Prestador doente");
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELED);
         assertThat(booking.getCancellationReason()).isEqualTo("Prestador doente");
         assertThat(response.status()).isEqualTo(BookingStatus.CANCELED);
+
     }
 
     @Test
@@ -117,5 +133,6 @@ class ProviderBookingServiceTest {
         assertThatThrownBy(() -> providerBookingService.cancelBooking(provider.getId(), booking.getId(), null))
                 .isInstanceOf(ResourceConflictException.class)
                 .hasMessage("Este agendamento já se encontra cancelado.");
+        verifyNoInteractions(eventPublisher);
     }
 }

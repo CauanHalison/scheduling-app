@@ -14,6 +14,8 @@ import com.github.cauanHalison.scheduling_api.eventtype.domain.EventTypeEntity;
 import com.github.cauanHalison.scheduling_api.eventtype.repository.EventTypeRepository;
 import com.github.cauanHalison.scheduling_api.identity.domain.ProviderEntity;
 import com.github.cauanHalison.scheduling_api.identity.repository.ProviderRepository;
+import com.github.cauanHalison.scheduling_api.notification.BookingReminderScheduler;
+import com.github.cauanHalison.scheduling_api.notification.service.EmailService;
 import com.github.cauanHalison.scheduling_api.schedule.domain.AvailabilityScheduleEntity;
 import com.github.cauanHalison.scheduling_api.schedule.repository.AvailabilityScheduleRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -26,19 +28,30 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,6 +59,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 class BookingIntegrationTest {
+
+    @MockitoBean
+    private EmailService emailService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -71,6 +87,9 @@ class BookingIntegrationTest {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
+    @Autowired
+    private BookingReminderScheduler bookingReminderScheduler;
+
     private ProviderEntity provider;
     private EventTypeEntity eventType;
     private String accessToken;
@@ -78,6 +97,7 @@ class BookingIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        clearRateLimitKeys();
         bookingRepository.deleteAll();
         availabilityScheduleRepository.deleteAll();
         eventTypeRepository.deleteAll();
@@ -263,6 +283,213 @@ class BookingIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].clientEmail").value("maria@test.com"));
+    }
+
+    @Test
+    @DisplayName("Should send creation emails to client and provider after booking commit")
+    void shouldSendEmailsWhenBookingIsCreated() throws Exception {
+        createMondayAvailability(LocalTime.of(9, 0), LocalTime.of(12, 0));
+        bookSlot(LocalTime.of(9, 0), "Carlos Cliente", "carlos@gmail.com");
+
+        verify(emailService, timeout(5000)).sendEmail(
+                eq("carlos@gmail.com"), contains("Agendamento Confirmado"), anyString(), any(byte[].class));
+        verify(emailService, timeout(5000)).sendEmail(
+                eq("provider@test.com"), contains("Novo Agendamento"), anyString(), any(byte[].class));
+    }
+
+    @Test
+    @DisplayName("Should send cancellation emails when provider cancels (regression: lazy provider in async listener)")
+    void shouldSendEmailsWhenProviderCancels() throws Exception {
+        createMondayAvailability(LocalTime.of(9, 0), LocalTime.of(12, 0));
+        UUID bookingId = bookSlot(LocalTime.of(9, 0), "Carlos Cliente", "carlos@gmail.com");
+
+        mockMvc.perform(post("/provider/bookings/{id}/cancel", bookingId)
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CancelBookingRequest("Prestador doente"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELED"));
+
+        verify(emailService, timeout(5000)).sendEmail(
+                eq("carlos@gmail.com"), contains("Agendamento Cancelado"), contains("Prestador doente"), any(byte[].class));
+        verify(emailService, timeout(5000)).sendEmail(
+                eq("provider@test.com"), contains("Agendamento Cancelado"), contains("Prestador doente"), any(byte[].class));
+    }
+
+    @Test
+    @DisplayName("Should send cancellation emails when guest cancels by token")
+    void shouldSendEmailsWhenGuestCancels() throws Exception {
+        createMondayAvailability(LocalTime.of(9, 0), LocalTime.of(12, 0));
+        String bookingJson = bookSlotRaw(LocalTime.of(9, 0), "Carlos Cliente", "carlos@gmail.com");
+        UUID cancelToken = UUID.fromString(objectMapper.readTree(bookingJson).get("cancelToken").asText());
+
+        mockMvc.perform(post("/guest/bookings/{cancelToken}/cancel", cancelToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CancelBookingRequest("Desisti"))))
+                .andExpect(status().isOk());
+
+        verify(emailService, timeout(5000)).sendEmail(
+                eq("carlos@gmail.com"), contains("Agendamento Cancelado"), contains("Desisti"), any(byte[].class));
+        verify(emailService, timeout(5000)).sendEmail(
+                eq("provider@test.com"), contains("Agendamento Cancelado"), contains("Desisti"), any(byte[].class));
+    }
+
+    @Test
+    @DisplayName("Should not send any email when booking creation is rejected")
+    void shouldNotSendEmailsWhenBookingRejected() throws Exception {
+        // sem disponibilidade cadastrada: slot indisponível -> 409
+        Instant slot = getNextFutureMonday().atTime(9, 0).atZone(providerZone).toInstant();
+
+        mockMvc.perform(post("/public/users/{userSlug}/events/{eventSlug}/book", provider.getSlug(), eventType.getSlug())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateBookingRequest("Carlos", "carlos@gmail.com", slot))))
+                .andExpect(status().isConflict());
+
+        verify(emailService, after(1000).never()).sendEmail(anyString(), anyString(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("Should send magic link email")
+    void shouldSendMagicLinkEmail() throws Exception {
+        saveDirectBooking("maria@test.com");
+
+        mockMvc.perform(post("/guest/magic-link/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new MagicLinkRequest("maria@test.com"))))
+                .andExpect(status().isOk());
+
+        verify(emailService, timeout(5000)).sendEmail(
+                eq("maria@test.com"), contains("link de acesso"), contains("/guest/magic-link?token="), eq(null));
+    }
+
+    @Test
+    @DisplayName("Should respond 200 but send no email when email has no bookings")
+    void shouldNotSendMagicLinkWhenEmailHasNoBookings() throws Exception {
+        mockMvc.perform(post("/guest/magic-link/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new MagicLinkRequest("ghost@test.com"))))
+                .andExpect(status().isOk());
+
+        verify(emailService, after(1000).never()).sendEmail(anyString(), anyString(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("Should return 429 with Retry-After after exceeding the per-email limit")
+    void shouldRateLimitMagicLinkPerEmail() throws Exception {
+        String body = objectMapper.writeValueAsString(new MagicLinkRequest("maria@test.com"));
+
+        for (int i = 0; i < 3; i++) {
+            mockMvc.perform(post("/guest/magic-link/request")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isOk());
+        }
+
+        mockMvc.perform(post("/guest/magic-link/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(jsonPath("$.statusCode").value(429));
+    }
+
+    @Test
+    @DisplayName("Should return 429 after exceeding the per-IP limit using different emails")
+    void shouldRateLimitMagicLinkPerIp() throws Exception {
+        for (int i = 0; i < 10; i++) {
+            mockMvc.perform(post("/guest/magic-link/request")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new MagicLinkRequest("user" + i + "@test.com"))))
+                    .andExpect(status().isOk());
+        }
+
+        mockMvc.perform(post("/guest/magic-link/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new MagicLinkRequest("another@test.com"))))
+                .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    @DisplayName("Should send reminder email once and mark reminderSentAt (idempotent on second run)")
+    void shouldSendReminderEmailOnceForUpcomingBooking() {
+        Instant start = Instant.now().plus(2, ChronoUnit.HOURS);
+        BookingEntity upcoming = new BookingEntity();
+        upcoming.setProvider(provider);
+        upcoming.setEventType(eventType);
+        upcoming.setClientName("Ana Lembrete");
+        upcoming.setClientEmail("ana@test.com");
+        upcoming.setStartTime(start);
+        upcoming.setEndTime(start.plusSeconds(1800));
+        upcoming.setBlockedUntil(start.plusSeconds(2700));
+        upcoming.setStatus(BookingStatus.CONFIRMED);
+        upcoming = bookingRepository.save(upcoming);
+
+        // 1a execucao: deve enviar o lembrete e gravar reminderSentAt
+        bookingReminderScheduler.sendUpcomingBookingReminders();
+
+        verify(emailService, timeout(5000)).sendEmail(
+                eq("ana@test.com"),
+                contains("Lembrete de agendamento"),
+                contains("/guest/bookings/" + upcoming.getCancelToken()),
+                eq(null)
+        );
+
+        BookingEntity afterFirstRun = bookingRepository.findById(upcoming.getId()).orElseThrow();
+        assertThat(afterFirstRun.getReminderSentAt()).isNotNull();
+
+        // 2a execucao imediata: nao deve reenviar
+        bookingReminderScheduler.sendUpcomingBookingReminders();
+
+        verify(emailService, after(1000).times(1)).sendEmail(
+                eq("ana@test.com"),
+                contains("Lembrete de agendamento"),
+                anyString(),
+                any()
+        );
+    }
+
+    private void clearRateLimitKeys() {
+        Set<String> keys = redisTemplate.keys("ratelimit:*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
+    }
+
+    private void saveDirectBooking(String clientEmail) {
+        Instant start = Instant.now().plus(1, ChronoUnit.DAYS);
+        BookingEntity booking = new BookingEntity();
+        booking.setProvider(provider);
+        booking.setEventType(eventType);
+        booking.setClientName("Maria");
+        booking.setClientEmail(clientEmail);
+        booking.setStartTime(start);
+        booking.setEndTime(start.plusSeconds(1800));
+        booking.setBlockedUntil(start.plusSeconds(2700));
+        booking.setStatus(BookingStatus.CONFIRMED);
+        bookingRepository.save(booking);
+    }
+
+    private void createMondayAvailability(LocalTime start, LocalTime end) {
+        AvailabilityScheduleEntity schedule = new AvailabilityScheduleEntity();
+        schedule.setProvider(provider);
+        schedule.setDayOfWeek(DayOfWeek.MONDAY);
+        schedule.setStartTime(start);
+        schedule.setEndTime(end);
+        availabilityScheduleRepository.save(schedule);
+    }
+
+    private String bookSlotRaw(LocalTime time, String name, String email) throws Exception {
+        Instant slot = getNextFutureMonday().atTime(time).atZone(providerZone).toInstant();
+        return mockMvc.perform(post("/public/users/{userSlug}/events/{eventSlug}/book", provider.getSlug(), eventType.getSlug())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new CreateBookingRequest(name, email, slot))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+    }
+
+    private UUID bookSlot(LocalTime time, String name, String email) throws Exception {
+        String json = bookSlotRaw(time, name, email);
+        return UUID.fromString(objectMapper.readTree(json).get("id").asText());
     }
 
     private LocalDate getNextFutureMonday() {

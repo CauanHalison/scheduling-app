@@ -1,13 +1,12 @@
 package com.github.cauanHalison.scheduling_api.bookings.repository;
 
 import com.github.cauanHalison.scheduling_api.bookings.domain.BookingEntity;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 
@@ -32,6 +31,24 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID>, J
             @Param("endRange") Instant endRange
     );
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(
+            @QueryHint(name = "jakarta.persistence.lock.timeout", value = "-2")
+    )
+    @EntityGraph(attributePaths = {"eventType", "provider"})
+    @Query("""
+        SELECT b from BookingEntity b
+        WHERE b.status = com.github.cauanHalison.scheduling_api.bookings.domain.enums.BookingStatus.CONFIRMED
+            AND b.reminderSentAt IS NULL
+            AND b.startTime >= :now
+            AND b.startTime <= :windowEnd
+        ORDER BY b.startTime ASC
+        """)
+    List<BookingEntity> findPendingReminders(
+            @Param("now") Instant now,
+            @Param("windowEnd") Instant windowEnd
+    );
+
     @EntityGraph(attributePaths = {"eventType"})
     Optional<BookingEntity> findByIdAndProviderId(UUID id, UUID providerId);
 
@@ -45,4 +62,6 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID>, J
 
     @EntityGraph(attributePaths = {"eventType", "provider"})
     List<BookingEntity> findAllByClientEmailIgnoreCaseOrderByStartTimeDesc(String clientEmail);
+
+    boolean existsByClientEmailIgnoreCase(String clientEmail);
 }

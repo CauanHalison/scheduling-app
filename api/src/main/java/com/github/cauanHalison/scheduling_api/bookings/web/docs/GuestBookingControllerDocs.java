@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -38,9 +39,10 @@ public interface GuestBookingControllerDocs {
 
     @Operation(summary = "Solicitar Magic Link", description = "Gera um token temporário com validade de 15 minutos no Redis para consulta de todos os agendamentos vinculados ao e-mail informado")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Solicitação processada com sucesso")
+            @ApiResponse(responseCode = "200", description = "Solicitação processada com sucesso"),
+            @ApiResponse(responseCode = "429", description = "Muitas solicitações. Veja o header Retry-After")
     })
-    ResponseEntity<Void> requestMagicLink(MagicLinkRequest request);
+    ResponseEntity<Void> requestMagicLink(MagicLinkRequest request, @Parameter(hidden = true) HttpServletRequest httpRequest);
 
     @Operation(summary = "Verificar Magic Link", description = "Valida o token temporário do Magic Link e retorna a lista de agendamentos associados ao e-mail")
     @ApiResponses({

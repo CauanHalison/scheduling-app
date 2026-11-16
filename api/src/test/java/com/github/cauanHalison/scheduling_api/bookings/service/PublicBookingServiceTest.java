@@ -14,6 +14,8 @@ import com.github.cauanHalison.scheduling_api.eventtype.repository.EventTypeRepo
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFoundException;
 import com.github.cauanHalison.scheduling_api.identity.domain.ProviderEntity;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingNotificationEvents.*;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingSnapshot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -47,6 +50,9 @@ class PublicBookingServiceTest {
     @Mock
     private SlotCalculationService slotCalculationService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @Spy
     private BookingMapper bookingMapper = new BookingMapper();
 
@@ -64,6 +70,7 @@ class PublicBookingServiceTest {
         provider = new ProviderEntity();
         provider.setId(UUID.randomUUID());
         provider.setName("Provider Test");
+        provider.setEmail("provider@test.com");
         provider.setSlug("provider-slug");
         provider.setTimeZone("America/Sao_Paulo");
 
@@ -136,6 +143,15 @@ class PublicBookingServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.clientName()).isEqualTo("Client Name");
         assertThat(response.cancelToken()).isNotNull();
+
+        ArgumentCaptor<BookingCreatedEvent> eventCaptor = ArgumentCaptor.forClass(BookingCreatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        BookingSnapshot snapshot = eventCaptor.getValue().booking();
+        assertThat(snapshot.eventTitle()).isEqualTo("Mentoria");
+        assertThat(snapshot.clientName()).isEqualTo("Client Name");
+        assertThat(snapshot.providerEmail()).isEqualTo("provider@test.com");
+        assertThat(snapshot.cancelToken()).isEqualTo(response.cancelToken());
     }
 
     @Test
@@ -153,5 +169,6 @@ class PublicBookingServiceTest {
                 .hasMessage("O horário solicitado não está disponível para agendamento.");
 
         verify(bookingRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
     }
 }

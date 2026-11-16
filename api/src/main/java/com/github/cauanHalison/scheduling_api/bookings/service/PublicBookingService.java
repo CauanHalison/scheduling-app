@@ -14,9 +14,12 @@ import com.github.cauanHalison.scheduling_api.eventtype.mapper.EventTypeMapper;
 import com.github.cauanHalison.scheduling_api.eventtype.repository.EventTypeRepository;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFoundException;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingNotificationEvents.*;
+import com.github.cauanHalison.scheduling_api.notification.event.BookingSnapshot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +37,7 @@ public class PublicBookingService {
     private final SlotCalculationService slotCalculationService;
     private final BookingMapper bookingMapper;
     private final EventTypeMapper eventTypeMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<EventTypeResponse> getProviderActiveEvents(String userSlug) {
@@ -87,6 +91,7 @@ public class PublicBookingService {
         booking.setStatus(BookingStatus.CONFIRMED);
 
         BookingEntity savedBooking = bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingCreatedEvent(BookingSnapshot.from(savedBooking)));
 
         log.info("Booking created successfully: id={}, providerId={}, eventTypeId={}, cancelToken={}, startTime={}",
                 savedBooking.getId(),
