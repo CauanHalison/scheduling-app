@@ -5,6 +5,7 @@ import com.github.cauanHalison.scheduling_api.bookings.dto.GuestBookingResponse;
 import com.github.cauanHalison.scheduling_api.bookings.dto.MagicLinkRequest;
 import com.github.cauanHalison.scheduling_api.bookings.service.GuestBookingService;
 import com.github.cauanHalison.scheduling_api.bookings.web.docs.GuestBookingControllerDocs;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,8 +38,11 @@ public class GuestBookingController implements GuestBookingControllerDocs {
 
     @Override
     @PostMapping("/magic-link/request")
-    public ResponseEntity<Void> requestMagicLink(@RequestBody @Valid MagicLinkRequest request) {
-        guestBookingService.requestMagicLink(request);
+    public ResponseEntity<Void> requestMagicLink(
+            @RequestBody @Valid MagicLinkRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        guestBookingService.requestMagicLink(request, httpRequest.getRemoteAddr());
         return ResponseEntity.ok().build();
     }
 
