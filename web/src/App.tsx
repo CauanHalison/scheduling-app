@@ -5,7 +5,6 @@ import { Toaster } from "sonner";
 import { AuthProvider } from "./contexts";
 import { queryClient } from "./lib/queryClient";
 import { AppRoutes } from "./routes";
-import "./App.css";
 
 function App() {
   return (
