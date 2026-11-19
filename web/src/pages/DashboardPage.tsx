@@ -10,10 +10,10 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="dashboard-container">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
 
-      <main className="dashboard-content">
+      <main className="mx-auto w-full flex-1 px-4 py-8">
         <Outlet />
       </main>
     </div>
