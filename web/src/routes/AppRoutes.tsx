@@ -20,8 +20,8 @@ interface LocationState {
 
 function LoadingScreen() {
   return (
-    <main className="login-container">
-      <div className="login-card" style={{ textAlign: "center" }}>
+    <main>
+      <div>
         <p>Carregando sessão...</p>
       </div>
     </main>
