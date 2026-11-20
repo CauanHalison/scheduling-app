@@ -43,3 +43,16 @@ jobs:
       - name: Validar build e tipos TypeScript
         working-directory: web
         run: npm run build
+
+  deploy:
+    name: Deploy em Produção (Web)
+    needs: build-and-lint
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOOK_URL: ${{ secrets.WEB_DEPLOY_HOOK_URL }}
+
+    steps:
+      - name: Disparar Deploy Hook da Web
+        if: env.DEPLOY_HOOK_URL != ''
+        run: curl -fsSL -X POST "$DEPLOY_HOOK_URL"

@@ -42,3 +42,16 @@ jobs:
         run: ./mvnw clean verify -B
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+  deploy:
+    name: Deploy em Produção (API)
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOOK_URL: ${{ secrets.API_DEPLOY_HOOK_URL }}
+
+    steps:
+      - name: Disparar Deploy Hook da API
+        if: env.DEPLOY_HOOK_URL != ''
+        run: curl -fsSL -X POST "$DEPLOY_HOOK_URL"
