@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${PORT:${SERVER_PORT:8080}}
   forward-headers-strategy: ${FORWARD_HEADERS_STRATEGY:none}
   servlet:
     context-path: /api/v1
@@ -44,8 +44,11 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      username: ${REDIS_USERNAME:}
       password: ${REDIS_PASSWORD:}
       timeout: 2000ms
+      ssl:
+        enabled: ${REDIS_SSL:false}
 
   mail:
     host: ${MAIL_HOST:localhost}
