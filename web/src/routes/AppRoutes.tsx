@@ -11,6 +11,7 @@ import {
   PublicProviderCatalog,
   SchedulePage,
 } from "../pages";
+import { PublicLayout } from "../layouts/PublicLayout";
 
 interface LocationState {
   from?: {
@@ -20,8 +21,8 @@ interface LocationState {
 
 function LoadingScreen() {
   return (
-    <main>
-      <div>
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="loading-state">
         <p>Carregando sessão...</p>
       </div>
     </main>
@@ -67,10 +68,13 @@ export function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
       </Route>
 
-      <Route path="/users/:userSlug/events" element={<PublicProviderCatalog />} />
-      <Route path="/users/:userSlug/events/:eventSlug" element={<PublicBookingPage />} />
-      <Route path="/guest/bookings/:cancelToken" element={<GuestBookingPage />} />
-      <Route path="/guest/magic-link" element={<GuestMagicLinkPage />} />
+      <Route element={<PublicLayout />}>
+        <Route path="/users/:userSlug/events" element={<PublicProviderCatalog />} />
+        <Route path="/users/:userSlug/events/:eventSlug" element={<PublicBookingPage />} />
+        <Route path="/guest/bookings/:cancelToken" element={<GuestBookingPage />} />
+        <Route path="/guest/magic-link" element={<GuestMagicLinkPage />} />
+      </Route>
+
 
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardPage />}>
