@@ -14,42 +14,42 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 import java.util.UUID;
 
-@Tag(name = "Guest Bookings", description = "Endpoints de autoatendimento para o convidado via token seguro e Magic Link")
+@Tag(name = "Guest Bookings", description = "Self-service endpoints for guests via secure token and Magic Link")
 public interface GuestBookingControllerDocs {
 
-    @Operation(summary = "Consultar agendamento por token", description = "Recupera os detalhes completos do agendamento utilizando o token de cancelamento enviado no e-mail")
+    @Operation(summary = "Get booking by cancel token", description = "Retrieves the full booking details using the cancellation token sent via email")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Agendamento localizado"),
-            @ApiResponse(responseCode = "404", description = "Agendamento não encontrado para o token fornecido")
+            @ApiResponse(responseCode = "200", description = "Booking found"),
+            @ApiResponse(responseCode = "404", description = "Booking not found for the provided token")
     })
     ResponseEntity<GuestBookingResponse> getBookingByCancelToken(
-            @Parameter(description = "Token UUID seguro recebido pelo cliente") UUID cancelToken
+            @Parameter(description = "Secure UUID token received by the guest") UUID cancelToken
     );
 
-    @Operation(summary = "Cancelar agendamento por token", description = "Cancela a reunião utilizando o token seguro, liberando o horário para novos agendamentos")
+    @Operation(summary = "Cancel booking by token", description = "Cancels the meeting using the secure token, freeing the time slot for new bookings")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Agendamento cancelado com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Agendamento não encontrado"),
-            @ApiResponse(responseCode = "409", description = "Agendamento já estava cancelado")
+            @ApiResponse(responseCode = "200", description = "Booking canceled successfully"),
+            @ApiResponse(responseCode = "404", description = "Booking not found"),
+            @ApiResponse(responseCode = "409", description = "Booking is already canceled")
     })
     ResponseEntity<GuestBookingResponse> cancelBookingByToken(
-            @Parameter(description = "Token UUID seguro recebido pelo cliente") UUID cancelToken,
+            @Parameter(description = "Secure UUID token received by the guest") UUID cancelToken,
             CancelBookingRequest request
     );
 
-    @Operation(summary = "Solicitar Magic Link", description = "Gera um token temporário com validade de 15 minutos no Redis para consulta de todos os agendamentos vinculados ao e-mail informado")
+    @Operation(summary = "Request Magic Link", description = "Generates a temporary token valid for 15 minutes in Redis to list all bookings linked to the provided email")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Solicitação processada com sucesso"),
-            @ApiResponse(responseCode = "429", description = "Muitas solicitações. Veja o header Retry-After")
+            @ApiResponse(responseCode = "200", description = "Request processed successfully"),
+            @ApiResponse(responseCode = "429", description = "Too many requests. Check the Retry-After header")
     })
     ResponseEntity<Void> requestMagicLink(MagicLinkRequest request, @Parameter(hidden = true) HttpServletRequest httpRequest);
 
-    @Operation(summary = "Verificar Magic Link", description = "Valida o token temporário do Magic Link e retorna a lista de agendamentos associados ao e-mail")
+    @Operation(summary = "Verify Magic Link", description = "Validates the temporary Magic Link token and returns the list of bookings associated with the email")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Agendamentos listados com sucesso"),
-            @ApiResponse(responseCode = "401", description = "Token expirado ou inválido")
+            @ApiResponse(responseCode = "200", description = "Bookings listed successfully"),
+            @ApiResponse(responseCode = "401", description = "Expired or invalid token")
     })
     ResponseEntity<List<GuestBookingResponse>> verifyMagicLink(
-            @Parameter(description = "Token temporário do Magic Link recebido no link") String token
+            @Parameter(description = "Temporary Magic Link token received in the link") String token
     );
 }

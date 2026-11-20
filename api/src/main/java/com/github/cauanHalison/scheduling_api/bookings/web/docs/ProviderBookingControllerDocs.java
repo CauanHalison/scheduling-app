@@ -17,41 +17,41 @@ import org.springframework.http.ResponseEntity;
 import java.time.Instant;
 import java.util.UUID;
 
-@Tag(name = "Provider Bookings", description = "Endpoints de gestão de agendamentos para o prestador autenticado")
+@Tag(name = "Provider Bookings", description = "Booking management endpoints for the authenticated provider")
 @SecurityRequirement(name = "bearerAuth")
 public interface ProviderBookingControllerDocs {
 
-    @Operation(summary = "Listar agendamentos", description = "Lista todos os agendamentos do prestador autenticado com filtros opcionais de status, datas e paginação")
+    @Operation(summary = "List bookings", description = "Lists all bookings of the authenticated provider with optional status, date range, and pagination filters")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Página de agendamentos retornada com sucesso")
+            @ApiResponse(responseCode = "200", description = "Bookings page returned successfully")
     })
     ResponseEntity<Page<ProviderBookingResponse>> listBookings(
             @Parameter(hidden = true) ProviderPrincipal principal,
-            @Parameter(description = "Filtro por status (CONFIRMED ou CANCELED)") BookingStatus status,
-            @Parameter(description = "Data de início mínima em UTC") Instant startDate,
-            @Parameter(description = "Data de início máxima em UTC") Instant endDate,
+            @Parameter(description = "Filter by status (CONFIRMED or CANCELED)") BookingStatus status,
+            @Parameter(description = "Minimum start date in UTC") Instant startDate,
+            @Parameter(description = "Maximum start date in UTC") Instant endDate,
             Pageable pageable
     );
 
-    @Operation(summary = "Detalhes do agendamento", description = "Retorna os detalhes de um agendamento específico pertencente ao prestador autenticado")
+    @Operation(summary = "Get booking details", description = "Returns the details of a specific booking belonging to the authenticated provider")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Agendamento encontrado"),
-            @ApiResponse(responseCode = "404", description = "Agendamento não encontrado")
+            @ApiResponse(responseCode = "200", description = "Booking found"),
+            @ApiResponse(responseCode = "404", description = "Booking not found")
     })
     ResponseEntity<ProviderBookingResponse> getBookingById(
             @Parameter(hidden = true) ProviderPrincipal principal,
-            @Parameter(description = "ID do agendamento") UUID id
+            @Parameter(description = "Booking ID") UUID id
     );
 
-    @Operation(summary = "Cancelar agendamento", description = "Cancela um agendamento com justificativa, liberando o horário imediatamente")
+    @Operation(summary = "Cancel booking", description = "Cancels a booking with a reason, freeing the time slot immediately")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Agendamento cancelado com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Agendamento não encontrado"),
-            @ApiResponse(responseCode = "409", description = "Agendamento já estava cancelado")
+            @ApiResponse(responseCode = "200", description = "Booking canceled successfully"),
+            @ApiResponse(responseCode = "404", description = "Booking not found"),
+            @ApiResponse(responseCode = "409", description = "Booking is already canceled")
     })
     ResponseEntity<ProviderBookingResponse> cancelBooking(
             @Parameter(hidden = true) ProviderPrincipal principal,
-            @Parameter(description = "ID do agendamento") UUID id,
+            @Parameter(description = "Booking ID") UUID id,
             CancelBookingRequest request
     );
 }

@@ -16,61 +16,61 @@ import org.springframework.http.ResponseEntity;
 import java.time.LocalDate;
 import java.util.List;
 
-@Tag(name = "Public Bookings", description = "Endpoints públicos de consulta de disponibilidade e agendamento")
+@Tag(name = "Public Bookings", description = "Public endpoints for checking availability and creating bookings")
 public interface PublicBookingControllerDocs {
 
-    @Operation(summary = "Vitrine de eventos do prestador", description = "Lista todos os tipos de eventos ativos configurados pelo prestador")
+    @Operation(summary = "Get provider event catalog", description = "Lists all active event types configured by the provider")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista de eventos ativos retornada com sucesso")
+            @ApiResponse(responseCode = "200", description = "Active event types returned successfully")
     })
     ResponseEntity<List<EventTypeResponse>> getProviderEvents(
-            @Parameter(description = "Slug do prestador de serviço", example = "cauan-halison") String userSlug
+            @Parameter(description = "Service provider slug", example = "cauan-halison") String userSlug
     );
 
-    @Operation(summary = "Detalhes públicos do evento", description = "Retorna os metadados do tipo de evento e do prestador para a página pública")
+    @Operation(summary = "Get public event details", description = "Returns the event type and provider metadata for the public booking page")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Metadados do evento recuperados com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Evento ou prestador não encontrado")
+            @ApiResponse(responseCode = "200", description = "Event metadata retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Event or provider not found")
     })
     ResponseEntity<PublicEventDetailsResponse> getPublicEventDetails(
-            @Parameter(description = "Slug do prestador de serviço", example = "cauan-halison") String userSlug,
-            @Parameter(description = "Slug do tipo de evento", example = "consultoria-30min") String eventSlug
+            @Parameter(description = "Service provider slug", example = "cauan-halison") String userSlug,
+            @Parameter(description = "Event type slug", example = "consultoria-30min") String eventSlug
     );
 
-    @Operation(summary = "Dias disponíveis no mês", description = "Retorna a lista de datas com slots livres para o mês/ano informado no fuso do cliente")
+    @Operation(summary = "Get available days in month", description = "Returns the list of dates with free slots for the given month/year in the guest's time zone")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Lista de datas disponíveis retornada com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Tipo de evento ou prestador não encontrado")
+            @ApiResponse(responseCode = "200", description = "Available dates returned successfully"),
+            @ApiResponse(responseCode = "404", description = "Event type or provider not found")
     })
     ResponseEntity<AvailableDaysResponse> getAvailableDays(
-            @Parameter(description = "Slug do prestador de serviço", example = "cauan-halison") String userSlug,
-            @Parameter(description = "Slug do tipo de evento", example = "consultoria-30min") String eventSlug,
-            @Parameter(description = "Mês desejado (1-12)", example = "11") Integer month,
-            @Parameter(description = "Ano desejado", example = "2026") Integer year,
-            @Parameter(description = "Fuso horário IANA do cliente", example = "America/Sao_Paulo") String timeZone
+            @Parameter(description = "Service provider slug", example = "cauan-halison") String userSlug,
+            @Parameter(description = "Event type slug", example = "consultoria-30min") String eventSlug,
+            @Parameter(description = "Target month (1-12)", example = "11") Integer month,
+            @Parameter(description = "Target year", example = "2026") Integer year,
+            @Parameter(description = "Guest IANA time zone", example = "America/Sao_Paulo") String timeZone
     );
 
-    @Operation(summary = "Horários livres para uma data", description = "Calcula e retorna os slots de horários livres para um dia específico")
+    @Operation(summary = "Get available slots for a date", description = "Calculates and returns the free time slots for a specific day")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Slots livres retornados com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Tipo de evento ou prestador não encontrado")
+            @ApiResponse(responseCode = "200", description = "Available slots returned successfully"),
+            @ApiResponse(responseCode = "404", description = "Event type or provider not found")
     })
     ResponseEntity<AvailableSlotsResponse> getAvailableSlots(
-            @Parameter(description = "Slug do prestador de serviço", example = "cauan-halison") String userSlug,
-            @Parameter(description = "Slug do tipo de evento", example = "consultoria-30min") String eventSlug,
-            @Parameter(description = "Data no formato YYYY-MM-DD", example = "2026-11-10") LocalDate date,
-            @Parameter(description = "Fuso horário IANA do cliente", example = "America/Sao_Paulo") String timeZone
+            @Parameter(description = "Service provider slug", example = "cauan-halison") String userSlug,
+            @Parameter(description = "Event type slug", example = "consultoria-30min") String eventSlug,
+            @Parameter(description = "Date in YYYY-MM-DD format", example = "2026-11-10") LocalDate date,
+            @Parameter(description = "Guest IANA time zone", example = "America/Sao_Paulo") String timeZone
     );
 
-    @Operation(summary = "Criar agendamento público", description = "Reserva um horário livre com garantia anti double-booking")
+    @Operation(summary = "Create public booking", description = "Books a free time slot with anti-double-booking protection")
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Agendamento confirmado com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Tipo de evento ou prestador não encontrado"),
-            @ApiResponse(responseCode = "409", description = "Horário indisponível ou conflito de concorrência simultânea")
+            @ApiResponse(responseCode = "201", description = "Booking confirmed successfully"),
+            @ApiResponse(responseCode = "404", description = "Event type or provider not found"),
+            @ApiResponse(responseCode = "409", description = "Time slot unavailable or concurrent booking conflict")
     })
     ResponseEntity<BookingConfirmationResponse> book(
-            @Parameter(description = "Slug do prestador de serviço", example = "cauan-halison") String userSlug,
-            @Parameter(description = "Slug do tipo de evento", example = "consultoria-30min") String eventSlug,
+            @Parameter(description = "Service provider slug", example = "cauan-halison") String userSlug,
+            @Parameter(description = "Event type slug", example = "consultoria-30min") String eventSlug,
             CreateBookingRequest request
     );
 }
