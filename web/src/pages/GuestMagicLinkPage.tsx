@@ -50,9 +50,6 @@ export function GuestMagicLinkPage() {
         <div className="mx-auto w-full max-w-xl py-4">
           <section className="card items-center text-center gap-5 p-6 sm:p-8">
             <header className="flex flex-col items-center gap-2">
-              <span className="rounded-lg border-2 border-red-700 bg-red-100 px-3 py-0.5 text-xs font-semibold text-red-700">
-                Acesso Expirado
-              </span>
               <h1 className="page-title">Link expirado ou inválido</h1>
               <p className="page-subtitle">
                 Este link de acesso expirou (validade de 15 minutos) ou já não é
