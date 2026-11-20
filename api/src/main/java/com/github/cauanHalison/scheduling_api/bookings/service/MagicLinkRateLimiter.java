@@ -12,11 +12,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.HexFormat;
 
-/**
- * Limita solicitacoes de magic link por IP e por e-mail usando contadores com TTL no Redis.
- * Todas as tentativas contam (inclusive para e-mails sem agendamentos), para nao revelar
- * quais e-mails existem na base.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -31,7 +26,6 @@ public class MagicLinkRateLimiter {
     private final StringRedisTemplate redisTemplate;
 
     public void check(String normalizedEmail, String ip) {
-        // IP primeiro: limita o volume total antes de criar chaves por e-mail
         enforce(IP_PREFIX + (ip != null ? ip : "unknown"), MAX_PER_IP, "ip");
         enforce(EMAIL_PREFIX + sha256(normalizedEmail), MAX_PER_EMAIL, "email");
     }
@@ -41,7 +35,6 @@ public class MagicLinkRateLimiter {
 
         Long ttl = redisTemplate.getExpire(key);
         if (ttl == null || ttl < 0) {
-            // primeira tentativa da janela (ou chave sem TTL por falha anterior): garante expiracao
             redisTemplate.expire(key, WINDOW);
             ttl = WINDOW.toSeconds();
         }
