@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { cancelBookingSchema, type CancelBookingFormData } from "../schemas/bookingSchema";
-import "./styles/EventTypeModal.css";
 
 interface CancelBookingModalProps {
   eventTitle: string;
@@ -37,46 +36,46 @@ export function CancelBookingModal({
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         <header className="modal-header">
-          <h2>Cancelar Agendamento</h2>
+          <h2 className="modal-title">Cancelar Agendamento</h2>
           <button
+            className="modal-close"
             type="button"
-            className="btn-close"
             onClick={onClose}
           >
             ✕
           </button>
         </header>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="modal-form">
-          <p className="modal-description">
-            Tem certeza que deseja cancelar <strong>{eventTitle}</strong> com{" "}
-            <strong>{participantName}</strong>?
+        <form className="modal-form" onSubmit={handleSubmit(onSubmit)}>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Tem certeza que deseja cancelar <strong className="text-slate-900">{eventTitle}</strong> com{" "}
+            <strong className="text-slate-900">{participantName}</strong>?
           </p>
 
           <div className="form-group">
-            <label htmlFor="reason">Motivo do cancelamento (Opcional)</label>
+            <label className="form-label" htmlFor="reason">Motivo do cancelamento (Opcional)</label>
             <textarea
+              className="input-field"
               id="reason"
               rows={3}
               placeholder="Informe o motivo do cancelamento..."
               {...register("reason")}
-              className={errors.reason ? "input-error" : ""}
             />
             {errors.reason && (
-              <span className="field-error">{errors.reason.message}</span>
+              <span className="form-error">{errors.reason.message}</span>
             )}
           </div>
 
           <footer className="modal-footer">
             <button
+              className="btn-secondary"
               type="button"
-              className="btn-cancel"
               onClick={onClose}
               disabled={isPending}
             >
               Voltar
             </button>
-            <button type="submit" className="btn-danger" disabled={isPending}>
+            <button className="btn-danger" type="submit" disabled={isPending}>
               {isPending ? "Cancelando..." : "Confirmar Cancelamento"}
             </button>
           </footer>

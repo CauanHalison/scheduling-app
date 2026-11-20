@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CancelBookingModal } from "../components";
 import { useCancelProviderBooking, useProviderBookings } from "../hooks";
+import { Calendar, Clock, User } from 'lucide-react';
 import type { BookingStatus, ProviderBookingResponse } from "../types";
-import "./styles/ProviderBookingsPage.css";
 
 export function ProviderBookingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -12,7 +12,7 @@ export function ProviderBookingsPage() {
 
   const [cancelingBooking, setCancelingBooking] = useState<ProviderBookingResponse | null>(null);
 
-  const { data, isLoading, isError, isPlaceholderData } = useProviderBookings({
+  const { data, isLoading, isError } = useProviderBookings({
     status: statusParam,
     page: pageParam,
     size: 10,
@@ -66,51 +66,55 @@ export function ProviderBookingsPage() {
     }).format(new Date(iso));
   };
 
+  const filterBtnClass = (status?: BookingStatus) => {
+    const isActive = status === statusParam;
+
+    return `cursor-pointer rounded-xl px-4 py-1 text-sm font-medium transition duration-200 ${
+      isActive ?
+        "bg-blue-600 text-white shadow-sm"
+        : "border border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+    }`
+  } 
+
   if (isLoading) {
-    return (
-      <div className="bookings-page">
-        <div className="loading-state">Carregando agendamentos...</div>
-      </div>
-    );
+    return <div className="loading-state">Carregando agendamentos...</div>;
   }
 
   if (isError) {
     return (
-      <div className="bookings-page">
-        <div className="error-state">Ocorreu um erro ao carregar agendamentos.</div>
-      </div>
+      <div className="alert-error">Ocorreu um erro ao carregar agendamentos.</div>
     );
   }
 
   return (
-    <div className="bookings-page">
-      <header className="page-header">
+    <div>
+      <header>
         <div>
-          <h1>Agendamentos</h1>
-          <p>Acompanhe por aqui os horários reservados pelos seus clientes.</p>
+          <h1 className="page-title">Agendamentos</h1>
+          <p className="page-subtitle">Acompanhe por aqui os horários reservados pelos seus clientes.</p>
         </div>
       </header>
 
-      <div className="filter-tabs">
+      <div className="flex flex-row gap-3 pt-4">
         <button
+          className={filterBtnClass(undefined)}
           type="button"
-          className={`filter-tab ${!statusParam ? "active" : ""}`}
           onClick={() => handleStatusChange(undefined)}
         >
           Todos
         </button>
 
         <button
+          className={filterBtnClass("CONFIRMED")}
           type="button"
-          className={`filter-tab ${statusParam === "CONFIRMED" ? "active" : ""}`}
           onClick={() => handleStatusChange("CONFIRMED")}
         >
           Confirmados
         </button>
 
         <button
+          className={filterBtnClass("CANCELED")}
           type="button"
-          className={`filter-tab ${statusParam === "CANCELED" ? "active" : ""}`}
           onClick={() => handleStatusChange("CANCELED")}
         >
           Cancelados
@@ -118,78 +122,80 @@ export function ProviderBookingsPage() {
       </div>
 
       {data?.empty ? (
-        <div className="bookings-empty">
+        <div className="empty-state">
           <p>Nenhum agendamento encontrado.</p>
         </div>
       ) : (
-        <div
-          className="bookings-list"
-          style={{ opacity: isPlaceholderData ? 0.6 : 1 }}
-        >
-          {data?.content.map((booking) => (
-            <article key={booking.id} className="booking-card">
-              <div className="booking-card-header">
-                <div>
-                  <h3>{booking.eventTitle}</h3>
-                  <span className="booking-client-info">
-                    👤 {booking.clientName} ({booking.clientEmail})
+        <div className="flex flex-col gap-6">
+          <div className="grid grid-cols-1 gap-5 py-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {data?.content.map((booking) => (
+              <article
+                className="card"
+                key={booking.id}
+              >
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-row flex-nowrap items-start justify-between gap-2 w-full">
+                    <h3 className="font-semibold text-base text-slate-900 leading-snug">{booking.eventTitle}</h3>
+                    <span className={`shrink-0 font-semibold text-xs border px-3 py-0.5 flex items-center rounded-lg border-2 ${booking.status === "CONFIRMED" ? 'border-green-700 bg-green-100 text-green-700' : 'border-red-700 bg-red-100 text-red-700'}`}>
+                      {booking.status === "CONFIRMED" ? "Confirmado" : "Cancelado"}
+                    </span>
+                  </div>
+
+                  <span className="flex flex-row flex-nowrap items-center gap-2 text-sm text-slate-500 min-w-0">
+                    <User className="h-4 w-4 shrink-0 text-slate-400"/>
+                    <span className="truncate">
+                      {booking.clientName} ({booking.clientEmail})
+                    </span>
                   </span>
+
+                  <div className="flex flex-wrap items-center gap-4 pt-1 text-sm text-slate-600">
+                    <span className="inline-flex items-center gap-2"><Calendar className="h-4 w-4 text-blue-600"/> {formatDateTime(booking.startTime)}</span>
+                    <span className="inline-flex items-center gap-2"><Clock className="h-4 w-4 text-blue-600"/> {booking.durationMinutes} min</span>
+                  </div>
                 </div>
-                <span
-                  className={`booking-status-badge ${
-                    booking.status === "CONFIRMED"
-                      ? "status-confirmed"
-                      : "status-canceled"
-                  }`}
-                >
-                  {booking.status === "CONFIRMED" ? "Confirmado" : "Cancelado"}
-                </span>
-              </div>
 
-              <div className="booking-meta">
-                <span>🗓️ {formatDateTime(booking.startTime)}</span>
-                <span>⏱️ {booking.durationMinutes} min</span>
-              </div>
+                {(booking.cancellationReason || booking.status === "CONFIRMED") && (
+                  <div className="flex flex-col gap-3 border-t border-slate-200 pt-3">
+                    {booking.cancellationReason && (
+                      <p className="rounded-xl border border-dashed border-red-300 bg-red-50/70 px-3 py-2 text-xs text-red-800">
+                        <strong className="font-semibold">Motivo do cancelamento: </strong>
+                        <span>{booking.cancellationReason}</span>
+                      </p>
+                    )}
 
-              {booking.cancellationReason && (
-                <p className="booking-cancel-reason">
-                  <strong>Motivo do cancelamento: </strong>
-                  {booking.cancellationReason}
-                </p>
-              )}
-
-              {booking.status === "CONFIRMED" && (
-                <div className="booking-actions">
-                  <button
-                    type="button"
-                    className="btn-danger"
-                    onClick={() => setCancelingBooking(booking)}
-                  >
-                    Cancelar Agendamento
-                  </button>
-                </div>
-              )}
-            </article>
-          ))}
+                    {booking.status === "CONFIRMED" && (
+                      <button
+                        className="btn-danger w-full py-2"
+                        type="button"
+                        onClick={() => setCancelingBooking(booking)}
+                      >
+                        Cancelar Agendamento
+                      </button>
+                    )}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
 
           {data && data.totalPages > 1 && (
-            <div className="pagination">
+            <div className="flex items-center justify-center gap-4 pt-2">
               <button
+                className="btn-secondary"
                 type="button"
-                className="pagination-btn"
                 disabled={data.first}
                 onClick={() => handlePageChange(pageParam - 1)}
               >
                 Anterior
               </button>
 
-              <span className="pagination-info">
+              <span className="text-sm font-medium text-slate-600">
                 Página {data.number + 1} de {data.totalPages}
               </span>
 
               <button
+                className="btn-secondary"
                 type="button"
-                className="pagination-btn"
                 disabled={data.last}
                 onClick={() => handlePageChange(pageParam + 1)}
               >

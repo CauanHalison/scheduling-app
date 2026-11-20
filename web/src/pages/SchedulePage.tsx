@@ -15,7 +15,7 @@ import {
   type DayScheduleRequest,
   type TimeIntervalRequest,
 } from "../types/schedule";
-import "./styles/SchedulePage.css";
+import { Calendar, Plus, Save, Trash, X } from "lucide-react";
 
 const ALL_DAYS: DayOfWeek[] = [
   "MONDAY",
@@ -77,26 +77,6 @@ export function SchedulePage() {
       setDayErrors({});
     }
   }, [scheduleData]);
-
-  const handleToggleDay = (dayOfWeek: DayOfWeek, enabled: boolean) => {
-    setDays((prev) =>
-      prev.map((day) =>
-        day.dayOfWeek === dayOfWeek
-          ? {
-              ...day,
-              intervals: enabled
-                ? [{ startTime: "09:00", endTime: "18:00" }]
-                : [],
-            }
-          : day
-      )
-    );
-    setDayErrors((prev) => {
-      const next = { ...prev };
-      delete next[dayOfWeek];
-      return next;
-    });
-  };
 
   const handleAddInterval = (dayOfWeek: DayOfWeek) => {
     setDays((prev) =>
@@ -206,133 +186,127 @@ export function SchedulePage() {
   };
 
   if (isLoadingSchedule) {
-    return (
-      <div className="schedule-page">
-        <div className="loading-state">Carregando disponibilidade...</div>
-      </div>
-    );
+    return <div className="loading-state">Carregando disponibilidade...</div>;
   }
 
   if (isScheduleError) {
     return (
-      <div className="schedule-page">
-        <div className="error-state">
-          Erro ao carregar a grade de disponibilidade.
-        </div>
+      <div className="alert-error">
+        Erro ao carregar a grade de disponibilidade.
       </div>
     );
   }
 
   return (
-    <div className="schedule-page">
-      <header className="page-header">
+    <div>
+      <header>
         <div>
-          <h1>Disponibilidade</h1>
-          <p>
+          <h1 className="page-title">Disponibilidade</h1>
+          <p className="page-subtitle">
             Configure seus horários de atendimento semanal
             {scheduleData?.timeZone ? ` (${scheduleData.timeZone})` : ""}
           </p>
         </div>
         <button
+          className="btn-primary mt-3"
           type="button"
           onClick={handleSaveSchedule}
           disabled={replaceMutation.isPending}
         >
+          <Save className="h-4 w-4"/>
           {replaceMutation.isPending ? "Salvando..." : "Salvar Alterações"}
         </button>
       </header>
 
-      <section className="schedule-section">
-        <div className="weekly-card">
+      <section className="mt-3">
+        <div className="grid items-start grid-cols-1 gap-3 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
           {days.map((day) => {
             const isEnabled = day.intervals.length > 0;
             const errorMsg = dayErrors[day.dayOfWeek];
 
             return (
-              <div
+              <div 
+                className="card pt-0 px-0 overflow-hidden"
                 key={day.dayOfWeek}
-                className={`day-row ${!isEnabled ? "day-disabled" : ""}`}
               >
-                <div className="day-label-col">
-                  <label className="switch">
-                    <input
-                      type="checkbox"
-                      checked={isEnabled}
-                      onChange={(e) =>
-                        handleToggleDay(day.dayOfWeek, e.target.checked)
-                      }
-                    />
-                    <span className="slider-round"></span>
-                  </label>
-                  <span className="day-name">
+                <div className="w-full flex items-center">
+                  <span className={`w-full text-md font-bold text-center py-2 ${isEnabled? 'bg-blue-600 text-white' : ' bg-slate-200 text-slate-600'}`}>
                     {DAY_OF_WEEK_LABELS[day.dayOfWeek]}
                   </span>
                 </div>
 
-                <div className="day-intervals-col">
+                <div className="flex flex-row flex-wrap justify-center px-3 items-center">
                   {!isEnabled ? (
-                    <span className="unavailable-label">Sem expediente</span>
+                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-100/80 px-3 py-3 text-center">
+                      <span className="text-sm font-semibold text-slate-600">Sem expediente</span>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Adicione um turno para ativar este dia
+                      </p>
+                    </div>
                   ) : (
-                    <div className="intervals-list">
+                    <div className="flex w-full flex-col gap-2">
                       {day.intervals.map((interval, idx) => (
-                        <div key={idx} className="interval-row">
-                          <input
-                            type="time"
-                            value={interval.startTime}
-                            onChange={(e) =>
-                              handleIntervalChange(
-                                day.dayOfWeek,
-                                idx,
-                                "startTime",
-                                e.target.value
-                              )
-                            }
-                            className="time-input"
-                          />
-                          <span className="time-separator">até</span>
-                          <input
-                            type="time"
-                            value={interval.endTime}
-                            onChange={(e) =>
-                              handleIntervalChange(
-                                day.dayOfWeek,
-                                idx,
-                                "endTime",
-                                e.target.value
-                              )
-                            }
-                            className="time-input"
-                          />
-
-                          <button
-                            type="button"
-                            className="btn-icon-remove"
-                            onClick={() =>
-                              handleRemoveInterval(day.dayOfWeek, idx)
-                            }
-                            title="Remover turno"
-                          >
-                            ✕
-                          </button>
+                        <div
+                          key={idx}
+                          className="flex flex-col gap-1.5 rounded-xl border border-slate-200 bg-slate-50/70 p-2"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <input
+                              type="time"
+                              className="time-input"
+                              value={interval.startTime}
+                              onChange={(e) =>
+                                handleIntervalChange(
+                                  day.dayOfWeek,
+                                  idx,
+                                  "startTime",
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <span className="shrink-0 text-[11px] font-medium text-slate-400">até</span>
+                            <input
+                              type="time"
+                              className="time-input"
+                              value={interval.endTime}
+                              onChange={(e) =>
+                                handleIntervalChange(
+                                  day.dayOfWeek,
+                                  idx,
+                                  "endTime",
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <button
+                              type="button"
+                              className="shrink-0 cursor-pointer rounded-md p-1 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                              onClick={() =>
+                                handleRemoveInterval(day.dayOfWeek, idx)
+                              }
+                            >
+                              <X className="h-3.5 w-3.5"/>
+                            </button>
+                          </div>
                         </div>
                       ))}
 
                       {errorMsg && (
-                        <span className="day-error-msg">{errorMsg}</span>
+                        <span className="form-error text-center">{errorMsg}</span>
                       )}
                     </div>
                   )}
                 </div>
 
-                <div className="day-actions-col">
-                  {isEnabled && day.intervals.length < 10 && (
+                <div className="w-full px-3">
+                  {day.intervals.length < 10 && (
                     <button
+                      className={`py-1 w-full ${isEnabled ? 'btn-primary' : 'btn-secondary'}`}
                       type="button"
-                      className="btn-add-interval"
                       onClick={() => handleAddInterval(day.dayOfWeek)}
                       title="Adicionar turno"
                     >
-                      + Turno
+                      <Plus className="w-4 h-4"/> Turno
                     </button>
                   )}
                 </div>
@@ -342,56 +316,69 @@ export function SchedulePage() {
         </div>
       </section>
 
-      <section className="overrides-section">
-        <div className="overrides-header">
+      <section className="mt-10 border-t border-slate-200 pt-8">
+        <div>
           <div>
-            <h2>Bloqueios e Exceções</h2>
-            <p>
+            <h2 className="text-xl font-bold tracking-tight text-slate-900">Bloqueios e Exceções</h2>
+            <p className="page-subtitle">
               Adicione períodos em que você não estará disponível (férias,
               consultas, feriados)
             </p>
           </div>
           <button
+            className="btn-primary mt-3 mb-3"
             type="button"
-            className="btn-secondary"
             onClick={handleOpenOverrideModal}
           >
-            + Novo Bloqueio
+            <Plus className="h-4 w-4"/> Novo Bloqueio
           </button>
         </div>
 
         {isLoadingOverrides ? (
           <div className="loading-state">Carregando bloqueios...</div>
         ) : isOverridesError ? (
-          <div className="error-state">Erro ao carregar bloqueios futuros.</div>
+          <div className="alert-error">Erro ao carregar bloqueios futuros.</div>
         ) : !overrides || overrides.length === 0 ? (
-          <div className="overrides-empty">
+          <div className="empty-state">
             <p>Nenhum bloqueio futuro cadastrado.</p>
           </div>
         ) : (
-          <div className="overrides-list">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {overrides.map((override) => (
-              <article key={override.id} className="override-card">
-                <div className="override-info">
-                  <div className="override-dates">
-                    <span className="override-badge">Bloqueado</span>
+              <article className="card" key={override.id}>
+                <div className="flex w-full flex-col gap-2">
+                  <div className="flex w-full items-start justify-between gap-2">
+                    <div className="text-base font-semibold leading-snug text-slate-900">
+                      {override.reason ? (
+                        <p>{override.reason}</p>
+                      ) : (
+                        <p className="text-slate-500">Exceção sem justificativa</p>
+                      )}
+                    </div>
+                    <span className="shrink-0 rounded-lg border-2 border-red-700 bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+                      Bloqueado
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                    <Calendar className="h-4 w-4 shrink-0 text-blue-600" />
                     <strong>{formatDateTime(override.startTime)}</strong>
-                    <span>até</span>
+                    <span className="text-slate-400 font-bold">-</span>
                     <strong>{formatDateTime(override.endTime)}</strong>
                   </div>
-                  {override.reason && (
-                    <p className="override-reason">{override.reason}</p>
-                  )}
                 </div>
 
-                <button
-                  type="button"
-                  className="btn-danger"
-                  onClick={() => handleDeleteOverride(override.id)}
-                  disabled={deleteOverrideMutation.isPending}
-                >
-                  Remover
-                </button>
+                <div className="w-full border-t border-slate-200 pt-2">
+                  <button
+                    className="btn-danger w-full py-2"
+                    type="button"
+                    onClick={() => handleDeleteOverride(override.id)}
+                    disabled={deleteOverrideMutation.isPending}
+                  >
+                    Remover
+                    <Trash className="h-4 w-4" />
+                  </button>
+                </div>
               </article>
             ))}
           </div>
@@ -406,4 +393,3 @@ export function SchedulePage() {
 }
 
 export default SchedulePage;
-

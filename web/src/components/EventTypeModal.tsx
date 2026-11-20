@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { useAuth, useCreateEventType, useUpdateEventType } from "../hooks";
 import { eventTypeSchema, type EventTypeFormData } from "../schemas/eventTypeSchema";
 import type { EventTypeResponse } from "../types/eventType";
-import "./styles/EventTypeModal.css";
+import { Save } from "lucide-react";
 
 interface EventTypeModalProps {
   initialData: EventTypeResponse | null;
@@ -21,7 +21,6 @@ export function EventTypeModal({ initialData, onClose }: EventTypeModalProps) {
   const {
     register,
     handleSubmit,
-    watch,
     reset,
     setError,
     formState: { errors },
@@ -56,8 +55,6 @@ export function EventTypeModal({ initialData, onClose }: EventTypeModalProps) {
     }
   }, [initialData, reset]);
 
-  const currentSlug = watch("slug");
-
   const onSubmit = (data: EventTypeFormData) => {
     if (isEditing) {
       editEventType.mutate(
@@ -91,99 +88,101 @@ export function EventTypeModal({ initialData, onClose }: EventTypeModalProps) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-container"
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className="modal-header">
-          <h2>{isEditing ? "Editar Tipo de Evento" : "Novo Tipo de Evento"}</h2>
-          <button type="button" className="btn-close" onClick={onClose}>
+          <h2 className="modal-title">{isEditing ? "Editar Tipo de Evento" : "Novo Tipo de Evento"}</h2>
+          <button className="modal-close" type="button" onClick={onClose}>
             ✕
           </button>
         </header>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="modal-form">
+        <form className="modal-form" onSubmit={handleSubmit(onSubmit)}>
           <div className="form-group">
-            <label htmlFor="title">Título</label>
+            <label className="form-label" htmlFor="title">Título</label>
             <input
+              className="input-field"
               id="title"
               {...register("title")}
               placeholder="Ex: Consulta Inicial"
-              className={errors.title ? "input-error" : ""}
             />
-            {errors.title && <span className="field-error">{errors.title.message}</span>}
+            {errors.title && <span className="form-error">{errors.title.message}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="slug">Slug (URL amigável)</label>
-            <input
-              id="slug"
-              {...register("slug")}
-              placeholder="Ex: consulta-inicial"
-              className={errors.slug ? "input-error" : ""}
-            />
-            {errors.slug && <span className="field-error">{errors.slug.message}</span>}
-
-            <div className="slug-preview">
-              <span className="slug-preview-label">Link público:</span>
-              <code>
-                /{provider?.slug || "provider"}/{currentSlug || "slug-do-evento"}
-              </code>
+            <label className="form-label" htmlFor="slug">Slug (URL amigável)</label>
+            <div className="flex items-center overflow-hidden rounded-xl border border-slate-300 bg-white transition duration-300 focus-within:border-blue-600 focus-within:ring-3 focus-within:ring-blue-500/15">
+              <span className="shrink-0 select-none border-r border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-mono text-slate-500">
+                {provider?.slug}/events/
+              </span>
+              <input
+                className="w-full px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:bg-slate-100"
+                id="slug"
+                {...register("slug")}
+                placeholder="Ex: consulta-inicial"
+              />
             </div>
+            {errors.slug && <span className="form-error">{errors.slug.message}</span>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="description">Descrição</label>
+            <label className="form-label" htmlFor="description">Descrição</label>
             <textarea
+              className="input-field"
               id="description"
               rows={3}
               {...register("description")}
               placeholder="Breve descrição sobre como será o atendimento..."
-              className={errors.description ? "input-error" : ""}
             />
             {errors.description && (
-              <span className="field-error">{errors.description.message}</span>
+              <span className="form-error">{errors.description.message}</span>
             )}
           </div>
 
-          <div className="form-row">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-5">
             <div className="form-group">
-              <label htmlFor="durationMinutes">Duração (minutos)</label>
+              <label className="form-label" htmlFor="durationMinutes">Duração (minutos)</label>
               <input
+                className="input-field"
                 id="durationMinutes"
                 type="number"
                 step="5"
                 {...register("durationMinutes", { valueAsNumber: true })}
-                className={errors.durationMinutes ? "input-error" : ""}
               />
               {errors.durationMinutes && (
-                <span className="field-error">{errors.durationMinutes.message}</span>
+                <span className="form-error">{errors.durationMinutes.message}</span>
               )}
             </div>
 
             <div className="form-group">
-              <label htmlFor="bufferAfterMinutes">Intervalo após (minutos)</label>
+              <label className="form-label" htmlFor="bufferAfterMinutes">Intervalo após (minutos)</label>
               <input
+                className="input-field"
                 id="bufferAfterMinutes"
                 type="number"
                 step="5"
                 {...register("bufferAfterMinutes", { valueAsNumber: true })}
-                className={errors.bufferAfterMinutes ? "input-error" : ""}
               />
               {errors.bufferAfterMinutes && (
-                <span className="field-error">{errors.bufferAfterMinutes.message}</span>
+                <span className="form-error">{errors.bufferAfterMinutes.message}</span>
               )}
             </div>
           </div>
 
           <footer className="modal-footer">
             <button
+              className="btn-danger"
               type="button"
-              className="btn-cancel"
               onClick={onClose}
               disabled={isPending}
             >
               Cancelar
             </button>
-            <button type="submit" className="btn-submit" disabled={isPending}>
+            <button className="btn-primary" type="submit" disabled={isPending}>
               {isPending ? "Salvando..." : isEditing ? "Salvar Alterações" : "Criar Evento"}
+              <Save className="w-4 h-4"/>
             </button>
           </footer>
         </form>
