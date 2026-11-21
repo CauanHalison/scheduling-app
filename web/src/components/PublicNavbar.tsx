@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 export function PublicNavbar() {
   return (
     <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex w-full items-center justify-start gap-4 px-4 py-3">
+      <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3">
         <div className="flex items-center gap-2 text-blue-600">
           <Calendar className="h-5 w-5" />
           <span className="text-base font-bold tracking-tight text-slate-900">
