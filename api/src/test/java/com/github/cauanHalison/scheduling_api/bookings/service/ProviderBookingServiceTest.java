@@ -90,7 +90,7 @@ class ProviderBookingServiceTest {
         when(bookingRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
 
         Page<ProviderBookingResponse> result = providerBookingService.listBookings(
-                provider.getId(), null, null, null, pageable
+                provider.getId(), null, null, null, null, pageable
         );
 
         assertThat(result).isNotNull();

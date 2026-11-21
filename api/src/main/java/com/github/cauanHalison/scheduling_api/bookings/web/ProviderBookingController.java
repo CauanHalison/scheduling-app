@@ -35,10 +35,11 @@ public class ProviderBookingController implements ProviderBookingControllerDocs 
             @RequestParam(required = false) BookingStatus status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endDate,
+            @RequestParam(required = false) UUID eventTypeId,
             @PageableDefault(sort = "startTime", direction = Sort.Direction.ASC) Pageable pageable
     ) {
         UUID providerId = getProviderId(principal);
-        return ResponseEntity.ok(providerBookingService.listBookings(providerId, status, startDate, endDate, pageable));
+        return ResponseEntity.ok(providerBookingService.listBookings(providerId, status, startDate, endDate, eventTypeId, pageable));
     }
 
     @Override

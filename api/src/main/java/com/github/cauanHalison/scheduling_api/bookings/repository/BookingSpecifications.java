@@ -23,6 +23,7 @@ public final class BookingSpecifications {
             BookingStatus status,
             Instant startDate,
             Instant endDate,
+            UUID eventTypeId,
             Sort sort
     ) {
         return (root, query, cb) -> {
@@ -38,6 +39,9 @@ public final class BookingSpecifications {
             }
             if (endDate != null) {
                 predicates.add(cb.lessThanOrEqualTo(root.get("startTime"), endDate));
+            }
+            if (eventTypeId != null) {
+                predicates.add(cb.equal(root.get("eventType").get("id"), eventTypeId));
             }
 
             if (query != null && query.getResultType() != long.class && query.getResultType() != Long.class) {
