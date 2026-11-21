@@ -195,8 +195,8 @@ export function PublicBookingPage() {
           />
         </div>
 
-        <div className="flex flex-row flex-nowrap w-full gap-5">
-          <div className="bg-white px-8 py-4 rounded-xl border border-slate-200 shadow-xs">
+        <div className="flex flex-col w-full gap-5 lg:flex-row lg:flex-nowrap lg:items-start">
+          <div className="flex w-full shrink-0 flex-col items-center overflow-x-auto bg-white p-4 rounded-xl border border-slate-200 shadow-xs sm:px-6 sm:py-5 lg:w-auto">
             <h3 className="text-center font-semibold">
               Datas disponíveis para ({String(month).padStart(2, "0")}/{year})
             </h3>
@@ -229,45 +229,52 @@ export function PublicBookingPage() {
           </div>
           
           <div className="flex flex-col gap-5 w-full">
-            <div className="bg-white px-8 py-4 rounded-xl border border-slate-200 shadow-xs w-full">
-              {selectedDate && (
-                <div>
-                  <h3 className="mb-3 font-semibold text-center pb-2 border-b border-slate-200">
-                    Horários disponíveis para {selectedDate.split("-").reverse().join("/")}
-                  </h3>
-                  {loadingSlots ? (
-                    <div>Carregando horários...</div>
-                  ) : !slotsData || slotsData.slots.length === 0 ? (
-                    <div className="empty-state">
-                      <p>Sem horários livres para esta data.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-10 gap-2">
-                      {slotsData.slots.map((slot) => (
-                        <button
-                          className={`py-1 ${slot.startTime === selectedSlot ? 'btn-primary ' : 'btn-secondary'}`}
-                          key={slot.startTime}
-                          type="button"
-                          onClick={() =>
-                            setValue("startTime", slot.startTime, { shouldValidate: true })
-                          }
-                        >
-                          {formatTime(slot.startTime)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {errors.startTime && (
-                    <span>{errors.startTime.message}</span>
-                  )}
-                </div>
-              )}
-            </div>
+            {!selectedDate ? (
+              <p className="text-center text-sm text-slate-500">
+                Selecione uma data no calendário para ver os horários.
+              </p>
+            ) : (
+              <div className="bg-white px-8 py-4 rounded-xl border border-slate-200 shadow-xs w-full">
+                {selectedDate && (
+                  <div>
+                    <h3 className="mb-3 font-semibold text-center pb-2 border-b border-slate-200">
+                      Horários disponíveis para {selectedDate.split("-").reverse().join("/")}
+                    </h3>
+                    {loadingSlots ? (
+                      <div>Carregando horários...</div>
+                    ) : !slotsData || slotsData.slots.length === 0 ? (
+                      <div className="empty-state">
+                        <p>Sem horários livres para esta data.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
+                        {slotsData.slots.map((slot) => (
+                          <button
+                            className={`py-1 ${slot.startTime === selectedSlot ? 'btn-primary ' : 'btn-secondary'}`}
+                            key={slot.startTime}
+                            type="button"
+                            onClick={() =>
+                              setValue("startTime", slot.startTime, { shouldValidate: true })
+                            }
+                          >
+                            {formatTime(slot.startTime)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {errors.startTime && (
+                      <span>{errors.startTime.message}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               {selectedSlot && (
                 <>
                   <form 
-                    className="flex flex-col gap-3 w-full bg-white px-8 py-4 border border-slate-200 rounded-xl"
+                    className="flex flex-col gap-3 w-full bg-white px-8 py-4 border border-slate-200 rounded-xl sm:px-8 sm:py-5"
                     onSubmit={handleSubmit(onSubmit)}
                   >
                     <div className="px-3 py-2 text-lg text-center font-semibold text-slate-900 border-b border-slate-200">
