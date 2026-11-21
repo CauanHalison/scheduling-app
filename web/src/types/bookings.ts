@@ -84,6 +84,7 @@ export interface ProviderBookingFilters {
   status?: BookingStatus;
   startDate?: string;
   endDate?: string;
+  eventTypeId?: string;
   page?: number;
   size?: number;
   sort?: string;
