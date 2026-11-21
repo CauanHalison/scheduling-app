@@ -30,6 +30,7 @@ public interface ProviderBookingControllerDocs {
             @Parameter(description = "Filter by status (CONFIRMED or CANCELED)") BookingStatus status,
             @Parameter(description = "Minimum start date in UTC") Instant startDate,
             @Parameter(description = "Maximum start date in UTC") Instant endDate,
+            @Parameter(description = "Filter by eventType") UUID eventTypeId,
             Pageable pageable
     );
 

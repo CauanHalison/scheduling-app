@@ -1,19 +1,26 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CancelBookingModal } from "../components";
-import { useCancelProviderBooking, useProviderBookings } from "../hooks";
+import { useCancelProviderBooking, useEventTypes, useProviderBookings } from "../hooks";
 import { Calendar, Clock, User } from 'lucide-react';
 import type { BookingStatus, ProviderBookingResponse } from "../types";
 
 export function ProviderBookingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const statusParam = (searchParams.get("status") as BookingStatus) || undefined;
+  const eventTypeIdParam = (searchParams.get("etid")) || undefined;
   const pageParam = Number(searchParams.get("page") || 0);
+  const {
+    data:eventTypes, 
+    isLoading: isLoadingEventTYpes, 
+    isError: isErrorEventTypes
+  } = useEventTypes();
 
   const [cancelingBooking, setCancelingBooking] = useState<ProviderBookingResponse | null>(null);
 
   const { data, isLoading, isError } = useProviderBookings({
     status: statusParam,
+    eventTypeId: eventTypeIdParam,
     page: pageParam,
     size: 10,
     sort: "startTime,asc",
@@ -33,6 +40,19 @@ export function ProviderBookingsPage() {
     next.set("page", "0");
     setSearchParams(next);
   };
+
+  const handleEventTypeChange = (eventTypeId?: string) => {
+    const next = new URLSearchParams(searchParams)
+
+    if(eventTypeId && eventTypeId !== eventTypeIdParam) {
+      next.set("etid", eventTypeId)
+    } else {
+      next.delete("etid")
+    }
+
+    next.set("page", "0")
+    setSearchParams(next);
+  }
 
   const handlePageChange = (newPage: number) => {
     const next = new URLSearchParams(searchParams);
@@ -120,6 +140,28 @@ export function ProviderBookingsPage() {
           Cancelados
         </button>
       </div>
+
+      {!isErrorEventTypes && (
+        <select
+          value={eventTypeIdParam || ""}
+          disabled={isLoadingEventTYpes}
+          onChange={(e) => handleEventTypeChange(e.target.value || undefined)}
+          className="w-max cursor-pointer mt-3 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-700 shadow-2xs transition duration-200 hover:border-blue-300 focus:border-blue-600 focus:outline-none focus:ring-3 focus:ring-blue-500/15 disabled:cursor-not-allowed disabled:opacity-60 sm:w-64"
+        >
+          <option className="cursor-pointer" value="">
+            {isLoadingEventTYpes ? "Carregando eventos..." : "Todos os eventos"}
+          </option>
+          {eventTypes?.map((eventType) => (
+            <option
+              className="cursor-pointer"
+              key={eventType.id}
+              value={eventType.id}
+            >
+              {eventType.title}  
+            </option>
+          ))}
+        </select>
+      )}
 
       {data?.empty ? (
         <div className="empty-state">

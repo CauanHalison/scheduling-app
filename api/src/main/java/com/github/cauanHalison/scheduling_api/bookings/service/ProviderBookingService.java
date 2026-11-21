@@ -41,12 +41,13 @@ public class ProviderBookingService {
             BookingStatus status,
             Instant startDate,
             Instant endDate,
+            UUID eventTypeId,
             Pageable pageable
     ) {
-        log.debug("Listing bookings for provider: providerId={}, status={}, startDate={}, endDate={}, page={}",
-                providerId, status, startDate, endDate, pageable.getPageNumber());
+        log.debug("Listing bookings for provider: providerId={}, status={}, startDate={}, endDate={}, eventTypeId={}, page={}",
+                providerId, status, startDate, endDate, eventTypeId, pageable.getPageNumber());
 
-        Specification<BookingEntity> spec = BookingSpecifications.withFilters(providerId, status, startDate, endDate, pageable.getSort());
+        Specification<BookingEntity> spec = BookingSpecifications.withFilters(providerId, status, startDate, endDate, eventTypeId, pageable.getSort());
         Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         Page<BookingEntity> bookingsPage = bookingRepository.findAll(spec, unsortedPageable);
 

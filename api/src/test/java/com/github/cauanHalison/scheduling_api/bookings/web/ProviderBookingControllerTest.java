@@ -95,7 +95,7 @@ class ProviderBookingControllerTest {
                 Instant.now(), Instant.now().plusSeconds(1800), BookingStatus.CONFIRMED, null, Instant.now()
         );
 
-        when(providerBookingService.listBookings(eq(FIXED_PROVIDER_ID), any(), any(), any(), any(Pageable.class)))
+        when(providerBookingService.listBookings(eq(FIXED_PROVIDER_ID), any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(response)));
 
         mockMvc.perform(get("/provider/bookings"))
