@@ -121,6 +121,7 @@ class BookingIntegrationTest {
         eventType.setProvider(provider);
         eventType.setTitle("Consulta Médica");
         eventType.setSlug("consulta-medica");
+        eventType.setEventLink("https://meet.google.com/consulta-medica");
         eventType.setDurationMinutes(30);
         eventType.setBufferAfterMinutes(15);
         eventType.setIsActive(true);
@@ -147,6 +148,12 @@ class BookingIntegrationTest {
         schedule.setEndTime(LocalTime.of(12, 0));
         availabilityScheduleRepository.save(schedule);
 
+        // 0. Public catalog must not expose eventLink before booking
+        mockMvc.perform(get("/public/users/{userSlug}", provider.getSlug()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].slug").value("consulta-medica"))
+                .andExpect(jsonPath("$[0].eventLink").doesNotExist());
+
         // 1. Get available slots
         mockMvc.perform(get("/public/users/{userSlug}/events/{eventSlug}/slots", provider.getSlug(), eventType.getSlug())
                         .param("date", futureMonday.toString())
@@ -165,6 +172,7 @@ class BookingIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.cancelToken").isNotEmpty())
+                .andExpect(jsonPath("$.eventLink").value("https://meet.google.com/consulta-medica"))
                 .andExpect(jsonPath("$.clientEmail").value("carlos@gmail.com"))
                 .andReturn().getResponse().getContentAsString();
 
@@ -176,20 +184,23 @@ class BookingIntegrationTest {
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].clientName").value("Carlos Cliente"));
+                .andExpect(jsonPath("$.content[0].clientName").value("Carlos Cliente"))
+                .andExpect(jsonPath("$.content[0].eventLink").value("https://meet.google.com/consulta-medica"));
 
         // 4. Guest views booking by cancel token
         mockMvc.perform(get("/guest/bookings/{cancelToken}", cancelToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(bookingId.toString()))
+                .andExpect(jsonPath("$.eventLink").value("https://meet.google.com/consulta-medica"))
                 .andExpect(jsonPath("$.status").value("CONFIRMED"));
 
-        // 5. Guest cancels booking
+        // 5. Guest cancels booking (eventLink becomes null)
         mockMvc.perform(post("/guest/bookings/{cancelToken}/cancel", cancelToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new CancelBookingRequest("Desisti"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CANCELED"));
+                .andExpect(jsonPath("$.status").value("CANCELED"))
+                .andExpect(jsonPath("$.eventLink").doesNotExist());
 
         BookingEntity updatedBooking = bookingRepository.findById(bookingId).orElseThrow();
         assertThat(updatedBooking.getStatus()).isEqualTo(BookingStatus.CANCELED);
@@ -286,7 +297,8 @@ class BookingIntegrationTest {
                         .param("token", testToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].clientEmail").value("maria@test.com"));
+                .andExpect(jsonPath("$[0].clientEmail").value("maria@test.com"))
+                .andExpect(jsonPath("$[0].eventLink").value("https://meet.google.com/consulta-medica"));
     }
 
     @Test
@@ -296,9 +308,9 @@ class BookingIntegrationTest {
         bookSlot(LocalTime.of(9, 0), "Carlos Cliente", "carlos@gmail.com");
 
         verify(emailService, timeout(5000)).sendEmail(
-                eq("carlos@gmail.com"), contains("Agendamento Confirmado"), anyString(), any(byte[].class));
+                eq("carlos@gmail.com"), contains("Agendamento Confirmado"), contains("https://meet.google.com/consulta-medica"), any(byte[].class));
         verify(emailService, timeout(5000)).sendEmail(
-                eq("provider@test.com"), contains("Novo Agendamento"), anyString(), any(byte[].class));
+                eq("provider@test.com"), contains("Novo Agendamento"), contains("https://meet.google.com/consulta-medica"), any(byte[].class));
     }
 
     @Test

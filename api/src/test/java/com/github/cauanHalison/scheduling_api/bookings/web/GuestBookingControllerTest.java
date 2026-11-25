@@ -62,7 +62,7 @@ class GuestBookingControllerTest {
     void shouldGetBookingByCancelToken() throws Exception {
         UUID cancelToken = UUID.randomUUID();
         GuestBookingResponse response = new GuestBookingResponse(
-                UUID.randomUUID(), "Mentoria", "Desc", 30, "Dr. John", "Carlos", "carlos@gmail.com",
+                UUID.randomUUID(), "Mentoria", "Desc", "https://meet.google.com/mentoria", 30, "Dr. John", "Carlos", "carlos@gmail.com",
                 Instant.now(), Instant.now().plusSeconds(1800), BookingStatus.CONFIRMED, null
         );
 
@@ -71,6 +71,7 @@ class GuestBookingControllerTest {
         mockMvc.perform(get("/guest/bookings/{cancelToken}", cancelToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.clientName").value("Carlos"))
+                .andExpect(jsonPath("$.eventLink").value("https://meet.google.com/mentoria"))
                 .andExpect(jsonPath("$.status").value("CONFIRMED"));
     }
 
@@ -81,7 +82,7 @@ class GuestBookingControllerTest {
         CancelBookingRequest request = new CancelBookingRequest("Cancelamento");
 
         GuestBookingResponse response = new GuestBookingResponse(
-                UUID.randomUUID(), "Mentoria", "Desc", 30, "Dr. John", "Carlos", "carlos@gmail.com",
+                UUID.randomUUID(), "Mentoria", "Desc", null, 30, "Dr. John", "Carlos", "carlos@gmail.com",
                 Instant.now(), Instant.now().plusSeconds(1800), BookingStatus.CANCELED, "Cancelamento"
         );
 
@@ -126,7 +127,7 @@ class GuestBookingControllerTest {
     @DisplayName("Should verify magic link token")
     void shouldVerifyMagicLinkToken() throws Exception {
         GuestBookingResponse response = new GuestBookingResponse(
-                UUID.randomUUID(), "Mentoria", "Desc", 30, "Dr. John", "Carlos", "carlos@gmail.com",
+                UUID.randomUUID(), "Mentoria", "Desc", "https://meet.google.com/mentoria", 30, "Dr. John", "Carlos", "carlos@gmail.com",
                 Instant.now(), Instant.now().plusSeconds(1800), BookingStatus.CONFIRMED, null
         );
 

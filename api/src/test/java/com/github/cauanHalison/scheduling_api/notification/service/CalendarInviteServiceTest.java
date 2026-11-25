@@ -23,6 +23,7 @@ class CalendarInviteServiceTest {
                 UUID.randomUUID(),
                 "Mentoria",
                 "Descrição da mentoria",
+                "https://meet.google.com/mentoria-123",
                 "Provider Test",
                 "provider@test.com",
                 "America/Sao_Paulo",
@@ -49,6 +50,7 @@ class CalendarInviteServiceTest {
                 "SEQUENCE:0",
                 "UID:" + snapshot.bookingId() + "@scheduling-api.com",
                 "SUMMARY:Mentoria",
+                "LOCATION:https://meet.google.com/mentoria-123",
                 "mailto:provider@test.com",
                 "mailto:client@test.com"
         );
@@ -57,19 +59,21 @@ class CalendarInviteServiceTest {
     @Test
     @DisplayName("Should generate a CANCEL invite for a canceled booking")
     void shouldGenerateCancelInvite() {
-        assertThat(generate(true)).contains(
-                "METHOD:CANCEL",
-                "STATUS:CANCELLED",
-                "SEQUENCE:1",
-                "UID:" + snapshot.bookingId() + "@scheduling-api.com"
-        );
+        assertThat(generate(true))
+                .contains(
+                        "METHOD:CANCEL",
+                        "STATUS:CANCELLED",
+                        "SEQUENCE:1",
+                        "UID:" + snapshot.bookingId() + "@scheduling-api.com"
+                )
+                .doesNotContain("LOCATION:");
     }
 
     @Test
     @DisplayName("Should generate invite even when event description is null")
     void shouldHandleNullDescription() {
         snapshot = new BookingSnapshot(
-                snapshot.bookingId(), snapshot.cancelToken(), "Mentoria", null,
+                snapshot.bookingId(), snapshot.cancelToken(), "Mentoria", null, null,
                 "Provider Test", "provider@test.com", "America/Sao_Paulo", "Client", "client@test.com",
                 snapshot.startTime(), snapshot.endTime(), null
         );

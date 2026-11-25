@@ -12,7 +12,7 @@ import com.github.cauanHalison.scheduling_api.bookings.service.SlotCalculationSe
 import com.github.cauanHalison.scheduling_api.config.security.JwtAuthenticationFilter;
 import com.github.cauanHalison.scheduling_api.config.security.JwtService;
 import com.github.cauanHalison.scheduling_api.config.security.TokenBlacklistService;
-import com.github.cauanHalison.scheduling_api.eventtype.dto.EventTypeResponse;
+import com.github.cauanHalison.scheduling_api.eventtype.dto.PublicEventTypeResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,10 +63,10 @@ class PublicBookingControllerTest {
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
-    @DisplayName("Should return provider active events showcase")
+    @DisplayName("Should return provider active events showcase without eventLink")
     void shouldReturnProviderEvents() throws Exception {
-        EventTypeResponse event = new EventTypeResponse(
-                UUID.randomUUID(), "Consulta", "consulta", "Desc", 30, 0, true, Instant.now()
+        PublicEventTypeResponse event = new PublicEventTypeResponse(
+                UUID.randomUUID(), "Consulta", "consulta", "Desc", 30, 0
         );
 
         when(publicBookingService.getProviderActiveEvents("dr-john")).thenReturn(List.of(event));
@@ -74,7 +74,8 @@ class PublicBookingControllerTest {
         mockMvc.perform(get("/public/users/{userSlug}", "dr-john"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].slug").value("consulta"));
+                .andExpect(jsonPath("$[0].slug").value("consulta"))
+                .andExpect(jsonPath("$[0].eventLink").doesNotExist());
     }
 
     @Test
@@ -131,7 +132,8 @@ class PublicBookingControllerTest {
         CreateBookingRequest request = new CreateBookingRequest("Carlos", "carlos@gmail.com", startTime);
 
         BookingConfirmationResponse response = new BookingConfirmationResponse(
-                UUID.randomUUID(), "Consulta", "Dr. John", "Carlos", "carlos@gmail.com",
+                UUID.randomUUID(), "Consulta", "https://meet.google.com/consulta",
+                "Dr. John", "Carlos", "carlos@gmail.com",
                 startTime, startTime.plusSeconds(1800),
                 com.github.cauanHalison.scheduling_api.bookings.domain.enums.BookingStatus.CONFIRMED,
                 UUID.randomUUID(), Instant.now()
@@ -145,6 +147,7 @@ class PublicBookingControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.clientEmail").value("carlos@gmail.com"))
+                .andExpect(jsonPath("$.eventLink").value("https://meet.google.com/consulta"))
                 .andExpect(jsonPath("$.cancelToken").isNotEmpty());
     }
     @Test

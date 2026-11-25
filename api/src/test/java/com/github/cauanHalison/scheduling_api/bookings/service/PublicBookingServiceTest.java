@@ -8,11 +8,10 @@ import com.github.cauanHalison.scheduling_api.bookings.dto.PublicEventDetailsRes
 import com.github.cauanHalison.scheduling_api.bookings.mapper.BookingMapper;
 import com.github.cauanHalison.scheduling_api.bookings.repository.BookingRepository;
 import com.github.cauanHalison.scheduling_api.eventtype.domain.EventTypeEntity;
-import com.github.cauanHalison.scheduling_api.eventtype.dto.EventTypeResponse;
+import com.github.cauanHalison.scheduling_api.eventtype.dto.PublicEventTypeResponse;
 import com.github.cauanHalison.scheduling_api.eventtype.mapper.EventTypeMapper;
 import com.github.cauanHalison.scheduling_api.eventtype.repository.EventTypeRepository;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
-import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceNotFoundException;
 import com.github.cauanHalison.scheduling_api.identity.domain.ProviderEntity;
 import com.github.cauanHalison.scheduling_api.notification.event.BookingNotificationEvents.*;
 import com.github.cauanHalison.scheduling_api.notification.event.BookingSnapshot;
@@ -79,21 +78,23 @@ class PublicBookingServiceTest {
         eventType.setProvider(provider);
         eventType.setTitle("Mentoria");
         eventType.setSlug("mentoria");
+        eventType.setEventLink("https://meet.google.com/mentoria-room");
         eventType.setDurationMinutes(45);
         eventType.setBufferAfterMinutes(15);
         eventType.setIsActive(true);
     }
 
     @Test
-    @DisplayName("Should return provider active events showcase")
+    @DisplayName("Should return provider active events showcase without exposing eventLink")
     void shouldReturnProviderActiveEvents() {
         when(eventTypeRepository.findAllByProviderSlugAndIsActiveTrueOrderByCreatedAtDesc("provider-slug"))
                 .thenReturn(List.of(eventType));
 
-        List<EventTypeResponse> responses = publicBookingService.getProviderActiveEvents("provider-slug");
+        List<PublicEventTypeResponse> responses = publicBookingService.getProviderActiveEvents("provider-slug");
 
         assertThat(responses).hasSize(1);
         assertThat(responses.getFirst().title()).isEqualTo("Mentoria");
+        assertThat(responses.getFirst().slug()).isEqualTo("mentoria");
     }
 
     @Test
@@ -142,6 +143,7 @@ class PublicBookingServiceTest {
 
         assertThat(response).isNotNull();
         assertThat(response.clientName()).isEqualTo("Client Name");
+        assertThat(response.eventLink()).isEqualTo("https://meet.google.com/mentoria-room");
         assertThat(response.cancelToken()).isNotNull();
 
         ArgumentCaptor<BookingCreatedEvent> eventCaptor = ArgumentCaptor.forClass(BookingCreatedEvent.class);
@@ -149,6 +151,7 @@ class PublicBookingServiceTest {
 
         BookingSnapshot snapshot = eventCaptor.getValue().booking();
         assertThat(snapshot.eventTitle()).isEqualTo("Mentoria");
+        assertThat(snapshot.eventLink()).isEqualTo("https://meet.google.com/mentoria-room");
         assertThat(snapshot.clientName()).isEqualTo("Client Name");
         assertThat(snapshot.providerEmail()).isEqualTo("provider@test.com");
         assertThat(snapshot.cancelToken()).isEqualTo(response.cancelToken());
