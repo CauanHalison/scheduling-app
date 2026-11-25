@@ -15,6 +15,13 @@ public record EventTypeRequest(
         )
         String slug,
 
+        @Size(max = 500, message = "O link deve ter no máximo 500 caracteres")
+        @Pattern(
+                regexp = "^(\\s*|\\s*https?://\\S+\\s*)$",
+                message = "O link do evento deve ser uma URL válida iniciando com http:// ou https://"
+        )
+        String eventLink,
+
         @Size(max = 2000, message = "A descrição deve ter no máximo 2000 caracteres")
         String description,
 

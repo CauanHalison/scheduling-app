@@ -29,6 +29,9 @@ public class EventTypeEntity {
     @Column(name = "slug", nullable = false)
     private String slug;
 
+    @Column(name = "event_link")
+    private String eventLink;
+
     @Column(name = "description")
     private String description;
 

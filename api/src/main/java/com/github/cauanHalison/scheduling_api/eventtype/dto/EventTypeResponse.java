@@ -7,6 +7,7 @@ public record EventTypeResponse(
         UUID id,
         String title,
         String slug,
+        String eventLink,
         String description,
         Integer durationMinutes,
         Integer bufferAfterMinutes,
