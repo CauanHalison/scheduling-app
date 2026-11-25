@@ -27,6 +27,9 @@ public class CalendarInviteService {
 
         event.add(new Uid(booking.bookingId().toString() + "@scheduling-api.com"));
         event.add(new Description(booking.eventDescription() != null ? booking.eventDescription() : ""));
+        if (!isCanceled && booking.eventLink() != null && !booking.eventLink().isBlank()) {
+            event.add(new Location(booking.eventLink()));
+        }
         event.add(isCanceled ? ImmutableStatus.VEVENT_CANCELLED : ImmutableStatus.VEVENT_CONFIRMED);
         event.add(new Sequence(isCanceled ? 1 : 0));
 

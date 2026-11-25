@@ -8,6 +8,7 @@ import java.util.UUID;
 public record BookingConfirmationResponse(
         UUID id,
         String eventTitle,
+        String eventLink,
         String providerName,
         String clientName,
         String clientEmail,

@@ -1,6 +1,7 @@
 package com.github.cauanHalison.scheduling_api.bookings.mapper;
 
 import com.github.cauanHalison.scheduling_api.bookings.domain.BookingEntity;
+import com.github.cauanHalison.scheduling_api.bookings.domain.enums.BookingStatus;
 import com.github.cauanHalison.scheduling_api.bookings.dto.BookingConfirmationResponse;
 import com.github.cauanHalison.scheduling_api.bookings.dto.GuestBookingResponse;
 import com.github.cauanHalison.scheduling_api.bookings.dto.ProviderBookingResponse;
@@ -27,6 +28,7 @@ public class BookingMapper {
         return new BookingConfirmationResponse(
                 entity.getId(),
                 entity.getEventType().getTitle(),
+                resolveAccessibleEventLink(entity),
                 entity.getProvider().getName(),
                 entity.getClientName(),
                 entity.getClientEmail(),
@@ -43,6 +45,7 @@ public class BookingMapper {
                 entity.getId(),
                 entity.getEventType().getId(),
                 entity.getEventType().getTitle(),
+                resolveAccessibleEventLink(entity),
                 entity.getEventType().getDurationMinutes(),
                 entity.getClientName(),
                 entity.getClientEmail(),
@@ -59,6 +62,7 @@ public class BookingMapper {
                 entity.getId(),
                 entity.getEventType().getTitle(),
                 entity.getEventType().getDescription(),
+                resolveAccessibleEventLink(entity),
                 entity.getEventType().getDurationMinutes(),
                 entity.getProvider().getName(),
                 entity.getClientName(),
@@ -68,5 +72,12 @@ public class BookingMapper {
                 entity.getStatus(),
                 entity.getCancellationReason()
         );
+    }
+
+    private String resolveAccessibleEventLink(BookingEntity entity) {
+        if (entity.getStatus() == BookingStatus.CANCELED) {
+            return null;
+        }
+        return entity.getEventType().getEventLink();
     }
 }

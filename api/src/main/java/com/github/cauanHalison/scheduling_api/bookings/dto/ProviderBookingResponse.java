@@ -9,6 +9,7 @@ public record ProviderBookingResponse(
         UUID id,
         UUID eventTypeId,
         String eventTitle,
+        String eventLink,
         Integer durationMinutes,
         String clientName,
         String clientEmail,

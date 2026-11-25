@@ -8,7 +8,7 @@ import com.github.cauanHalison.scheduling_api.bookings.dto.PublicEventDetailsRes
 import com.github.cauanHalison.scheduling_api.bookings.service.PublicBookingService;
 import com.github.cauanHalison.scheduling_api.bookings.service.SlotCalculationService;
 import com.github.cauanHalison.scheduling_api.bookings.web.docs.PublicBookingControllerDocs;
-import com.github.cauanHalison.scheduling_api.eventtype.dto.EventTypeResponse;
+import com.github.cauanHalison.scheduling_api.eventtype.dto.PublicEventTypeResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -31,7 +31,7 @@ public class PublicBookingController implements PublicBookingControllerDocs {
 
     @Override
     @GetMapping
-    public ResponseEntity<List<EventTypeResponse>> getProviderEvents(@PathVariable String userSlug) {
+    public ResponseEntity<List<PublicEventTypeResponse>> getProviderEvents(@PathVariable String userSlug) {
         return ResponseEntity.ok(publicBookingService.getProviderActiveEvents(userSlug));
     }
 
