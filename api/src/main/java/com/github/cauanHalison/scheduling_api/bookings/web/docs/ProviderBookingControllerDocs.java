@@ -27,7 +27,7 @@ public interface ProviderBookingControllerDocs {
     })
     ResponseEntity<Page<ProviderBookingResponse>> listBookings(
             @Parameter(hidden = true) ProviderPrincipal principal,
-            @Parameter(description = "Filter by status (CONFIRMED or CANCELED)") BookingStatus status,
+            @Parameter(description = "Filter by status (CONFIRMED, CANCELED or COMPLETED)") BookingStatus status,
             @Parameter(description = "Minimum start date in UTC") Instant startDate,
             @Parameter(description = "Maximum start date in UTC") Instant endDate,
             @Parameter(description = "Filter by eventType") UUID eventTypeId,
@@ -48,7 +48,7 @@ public interface ProviderBookingControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Booking canceled successfully"),
             @ApiResponse(responseCode = "404", description = "Booking not found"),
-            @ApiResponse(responseCode = "409", description = "Booking is already canceled")
+            @ApiResponse(responseCode = "409", description = "Booking is already canceled or completed")
     })
     ResponseEntity<ProviderBookingResponse> cancelBooking(
             @Parameter(hidden = true) ProviderPrincipal principal,

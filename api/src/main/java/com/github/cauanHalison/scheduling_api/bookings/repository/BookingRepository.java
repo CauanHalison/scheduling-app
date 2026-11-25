@@ -49,6 +49,16 @@ public interface BookingRepository extends JpaRepository<BookingEntity, UUID>, J
             @Param("windowEnd") Instant windowEnd
     );
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE BookingEntity b
+            SET b.status = com.github.cauanHalison.scheduling_api.bookings.domain.enums.BookingStatus.COMPLETED,
+                b.version = b.version + 1
+            WHERE b.status = com.github.cauanHalison.scheduling_api.bookings.domain.enums.BookingStatus.CONFIRMED
+                AND b.endTime <= :now
+            """)
+    int markExpiredBookingsAsCompleted(@Param("now") Instant now);
+
     @EntityGraph(attributePaths = {"eventType"})
     Optional<BookingEntity> findByIdAndProviderId(UUID id, UUID providerId);
 

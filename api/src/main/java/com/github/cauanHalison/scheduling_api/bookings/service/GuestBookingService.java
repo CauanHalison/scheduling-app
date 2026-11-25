@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -63,6 +64,16 @@ public class GuestBookingService {
         if (booking.getStatus() == BookingStatus.CANCELED) {
             log.warn("Guest cancellation rejected - booking already canceled: id={}", booking.getId());
             throw new ResourceConflictException("Este agendamento já se encontra cancelado.");
+        }
+
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            log.warn("Guest cancellation rejected - booking already completed: id={}", booking.getId());
+            throw new ResourceConflictException("Não é possível cancelar um agendamento já concluído.");
+        }
+
+        if (booking.getEndTime().isBefore(Instant.now())) {
+            log.warn("Guest cancellation rejected - booking end time already passed: bookingId={}", booking.getId());
+            throw new ResourceConflictException("não é possivel cancelar um agendamento que já terminou");
         }
 
         String reason = (request != null && request.reason() != null && !request.reason().isBlank())
