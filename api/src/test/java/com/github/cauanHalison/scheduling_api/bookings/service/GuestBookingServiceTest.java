@@ -134,6 +134,17 @@ class GuestBookingServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw ResourceConflictException when guest tries to cancel a completed booking")
+    void shouldThrowWhenGuestCancelsCompletedBooking() {
+        booking.setStatus(BookingStatus.COMPLETED);
+        when(bookingRepository.findByCancelToken(cancelToken)).thenReturn(Optional.of(booking));
+
+        assertThatThrownBy(() -> guestBookingService.cancelBookingByToken(cancelToken, null))
+                .isInstanceOf(ResourceConflictException.class)
+                .hasMessage("Não é possível cancelar um agendamento já concluído.");
+        verifyNoInteractions(eventPublisher);
+    }
+    @Test
     @DisplayName("Should store magic link in redis with 15min TTL")
     void shouldStoreMagicLinkInRedis() {
         when(bookingRepository.existsByClientEmailIgnoreCase("user@example.com")).thenReturn(true);

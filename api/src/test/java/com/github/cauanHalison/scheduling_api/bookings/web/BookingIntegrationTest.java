@@ -8,6 +8,7 @@ import com.github.cauanHalison.scheduling_api.bookings.dto.CancelBookingRequest;
 import com.github.cauanHalison.scheduling_api.bookings.dto.CreateBookingRequest;
 import com.github.cauanHalison.scheduling_api.bookings.dto.MagicLinkRequest;
 import com.github.cauanHalison.scheduling_api.bookings.repository.BookingRepository;
+import com.github.cauanHalison.scheduling_api.bookings.scheduler.BookingCompletionScheduler;
 import com.github.cauanHalison.scheduling_api.config.security.JwtService;
 import com.github.cauanHalison.scheduling_api.config.security.ProviderPrincipal;
 import com.github.cauanHalison.scheduling_api.eventtype.domain.EventTypeEntity;
@@ -89,6 +90,9 @@ class BookingIntegrationTest {
 
     @Autowired
     private BookingReminderScheduler bookingReminderScheduler;
+
+    @Autowired
+    private BookingCompletionScheduler bookingCompletionScheduler;
 
     private ProviderEntity provider;
     private EventTypeEntity eventType;
@@ -446,6 +450,63 @@ class BookingIntegrationTest {
                 anyString(),
                 any()
         );
+    }
+
+    @Test
+    @DisplayName("Should mark only expired confirmed bookings as COMPLETED and reject subsequent cancellation")
+    void shouldCompleteExpiredConfirmedBookings() throws Exception {
+        Instant pastStart = Instant.now().minus(2, ChronoUnit.HOURS);
+        BookingEntity expiredConfirmed = new BookingEntity();
+        expiredConfirmed.setProvider(provider);
+        expiredConfirmed.setEventType(eventType);
+        expiredConfirmed.setClientName("Past Confirmed");
+        expiredConfirmed.setClientEmail("past@test.com");
+        expiredConfirmed.setStartTime(pastStart);
+        expiredConfirmed.setEndTime(pastStart.plusSeconds(1800));
+        expiredConfirmed.setBlockedUntil(pastStart.plusSeconds(2700));
+        expiredConfirmed.setStatus(BookingStatus.CONFIRMED);
+        expiredConfirmed = bookingRepository.save(expiredConfirmed);
+
+        BookingEntity expiredCanceled = new BookingEntity();
+        expiredCanceled.setProvider(provider);
+        expiredCanceled.setEventType(eventType);
+        expiredCanceled.setClientName("Past Canceled");
+        expiredCanceled.setClientEmail("canceled@test.com");
+        expiredCanceled.setStartTime(pastStart);
+        expiredCanceled.setEndTime(pastStart.plusSeconds(1800));
+        expiredCanceled.setBlockedUntil(pastStart.plusSeconds(2700));
+        expiredCanceled.setStatus(BookingStatus.CANCELED);
+        expiredCanceled = bookingRepository.save(expiredCanceled);
+
+        Instant futureStart = Instant.now().plus(2, ChronoUnit.HOURS);
+        BookingEntity futureConfirmed = new BookingEntity();
+        futureConfirmed.setProvider(provider);
+        futureConfirmed.setEventType(eventType);
+        futureConfirmed.setClientName("Future Confirmed");
+        futureConfirmed.setClientEmail("future@test.com");
+        futureConfirmed.setStartTime(futureStart);
+        futureConfirmed.setEndTime(futureStart.plusSeconds(1800));
+        futureConfirmed.setBlockedUntil(futureStart.plusSeconds(2700));
+        futureConfirmed.setStatus(BookingStatus.CONFIRMED);
+        futureConfirmed = bookingRepository.save(futureConfirmed);
+
+        bookingCompletionScheduler.completeExpiredBookings();
+
+        BookingEntity updatedExpiredConfirmed = bookingRepository.findById(expiredConfirmed.getId()).orElseThrow();
+        BookingEntity updatedExpiredCanceled = bookingRepository.findById(expiredCanceled.getId()).orElseThrow();
+        BookingEntity updatedFutureConfirmed = bookingRepository.findById(futureConfirmed.getId()).orElseThrow();
+
+        assertThat(updatedExpiredConfirmed.getStatus()).isEqualTo(BookingStatus.COMPLETED);
+        assertThat(updatedExpiredConfirmed.getVersion()).isEqualTo(1L);
+        assertThat(updatedExpiredCanceled.getStatus()).isEqualTo(BookingStatus.CANCELED);
+        assertThat(updatedFutureConfirmed.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+
+        mockMvc.perform(post("/provider/bookings/{id}/cancel", expiredConfirmed.getId())
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isConflict());
+
+        mockMvc.perform(post("/guest/bookings/{cancelToken}/cancel", expiredConfirmed.getCancelToken()))
+                .andExpect(status().isConflict());
     }
 
     private void clearRateLimitKeys() {
