@@ -133,6 +133,14 @@ export function ProviderBookingsPage() {
         </button>
 
         <button
+          className={filterBtnClass("COMPLETED")}
+          type="button"
+          onClick={() => handleStatusChange("COMPLETED")}
+        >
+          Concluídos
+        </button>
+
+        <button
           className={filterBtnClass("CANCELED")}
           type="button"
           onClick={() => handleStatusChange("CANCELED")}
@@ -178,8 +186,11 @@ export function ProviderBookingsPage() {
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-row flex-nowrap items-start justify-between gap-2 w-full">
                     <h3 className="font-semibold text-base text-slate-900 leading-snug">{booking.eventTitle}</h3>
-                    <span className={`shrink-0 font-semibold text-xs border px-3 py-0.5 flex items-center rounded-lg border-2 ${booking.status === "CONFIRMED" ? 'border-green-700 bg-green-100 text-green-700' : 'border-red-700 bg-red-100 text-red-700'}`}>
-                      {booking.status === "CONFIRMED" ? "Confirmado" : "Cancelado"}
+                    <span className={`shrink-0 font-semibold text-xs border px-3 py-0.5 flex items-center rounded-lg border-2 ${
+                      booking.status === "CONFIRMED" ? 'border-green-700 bg-green-100 text-green-700' : 
+                        ( booking.status === "CANCELED" ? 'border-red-700 bg-red-100 text-red-700' : 'border-slate-700 bg-slate-100 text-slate-700')}`
+                    }>
+                      {booking.status === "CONFIRMED" ? "Confirmado" : ( booking.status === "CANCELED" ? 'Cancelado' : 'Concluído')}
                     </span>
                   </div>
 

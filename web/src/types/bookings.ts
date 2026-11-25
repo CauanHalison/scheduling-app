@@ -1,4 +1,4 @@
-export type BookingStatus = 'CONFIRMED' | 'CANCELED';
+export type BookingStatus = 'CONFIRMED' | 'CANCELED' | "COMPLETED";
 
 export interface PublicEventDetailsResponse {
   providerName: string,

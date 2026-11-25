@@ -72,22 +72,28 @@ export function GuestBookingPage() {
             <span className="text-slate-500">Status</span>
             <span
               className={`rounded-lg border-2 px-3 py-0.5 text-xs font-semibold ${
-                booking.status === "CONFIRMED"
-                  ? "border-green-700 bg-green-100 text-green-700"
-                  : "border-red-700 bg-red-100 text-red-700"
-              }`}
-            >
-              {booking.status === "CONFIRMED" ? "Confirmado" : "Cancelado"}
+                      booking.status === "CONFIRMED" ? 'border-green-700 bg-green-100 text-green-700' : 
+                        ( booking.status === "CANCELED" ? 'border-red-700 bg-red-100 text-red-700' : 'border-slate-700 bg-slate-100 text-slate-700')}`
+                    }>
+                      {booking.status === "CONFIRMED" ? "Confirmado" : ( booking.status === "CANCELED" ? 'Cancelado' : 'Concluído')}
             </span>
           </div>
         </div>
 
-        {booking.status === "CANCELED" ? (
+        {booking.status === "CANCELED" && (
           <p className="rounded-xl border border-dashed border-red-300 bg-red-50/70 px-3 py-2 text-xs text-red-800">
             <strong className="font-semibold">Motivo do cancelamento: </strong>
             <span>{booking.cancellationReason || "Não informado"}</span>
           </p>
-        ) : (
+        )}
+
+        {booking.status === "COMPLETED" && (
+          <p className="rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-3 py-2 text-xs text-slate-800">
+            <strong className="font-semibold">Agendamento já concluído!</strong>
+          </p>
+        )} 
+        
+        {booking.status === "CONFIRMED" && (
           <div className="flex flex-col gap-4 border-t border-slate-200 pt-4">
             <div className="form-group">
               <label className="form-label" htmlFor="reason">
