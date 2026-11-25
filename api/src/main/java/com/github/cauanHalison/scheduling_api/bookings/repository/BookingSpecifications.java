@@ -49,7 +49,8 @@ public final class BookingSpecifications {
                 orders.add(cb.asc(
                         cb.<Integer>selectCase()
                                 .when(cb.equal(root.get("status"), BookingStatus.CONFIRMED), 0)
-                                .otherwise(1)
+                                .when(cb.equal(root.get("status"), BookingStatus.COMPLETED), 1)
+                                .when(cb.equal(root.get("status"), BookingStatus.CANCELED), 2)
                 ));
                 if(sort != null && sort.isSorted()) {
                     orders.addAll(QueryUtils.toOrders(sort, root, cb));

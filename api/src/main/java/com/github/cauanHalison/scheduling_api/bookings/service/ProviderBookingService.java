@@ -83,6 +83,17 @@ public class ProviderBookingService {
             throw new ResourceConflictException("Este agendamento já se encontra cancelado.");
         }
 
+        if(booking.getStatus() == BookingStatus.COMPLETED) {
+            log.warn("Cancellation rejected - booking already completed: bookingId={}, providerId={}",
+                    bookingId, providerId);
+            throw new ResourceConflictException("Não é possível cancelar um agendamento já concluído.");
+        }
+
+        if (booking.getEndTime().isBefore(Instant.now())) {
+            log.warn("Cancellation rejected - booking end time already passed: bookingId={}, providerId={}", bookingId, providerId);
+            throw new ResourceConflictException("não é possivel cancelar um agendamento que já terminou");
+        }
+
         String reason = (request != null && request.reason() != null && !request.reason().isBlank())
                 ? request.reason().trim()
                 : "Cancelado pelo prestador";

@@ -94,5 +94,8 @@ app:
   reminder:
     initial-delay-ms: ${REMINDER_INITIAL_DELAY_MS:60000}
     interval-ms: ${REMINDER_INTERVAL_MS:900000}
+  booking-completion:
+    initial-delay-ms: ${BOOKING_COMPLETION_INITIAL_DELAY_MS:60000}
+    interval-ms: ${BOOKING_COMPLETION_INTERVAL_MS:900000}
   mail:
     from: ${MAIL_FROM:no-reply@scheduling.local}

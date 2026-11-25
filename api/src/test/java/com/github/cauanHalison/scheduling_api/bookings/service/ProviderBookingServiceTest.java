@@ -135,4 +135,18 @@ class ProviderBookingServiceTest {
                 .hasMessage("Este agendamento já se encontra cancelado.");
         verifyNoInteractions(eventPublisher);
     }
+
+    @Test
+    @DisplayName("Should throw ResourceConflictException when canceling an already completed booking")
+    void shouldThrowWhenBookingAlreadyCompleted() {
+        booking.setStatus(BookingStatus.COMPLETED);
+
+        when(bookingRepository.findByIdAndProviderId(booking.getId(), provider.getId()))
+                .thenReturn(Optional.of(booking));
+
+        assertThatThrownBy(() -> providerBookingService.cancelBooking(provider.getId(), booking.getId(), null))
+                .isInstanceOf(ResourceConflictException.class)
+                .hasMessage("Não é possível cancelar um agendamento já concluído.");
+        verifyNoInteractions(eventPublisher);
+    }
 }

@@ -93,12 +93,10 @@ export function GuestMagicLinkPage() {
                     </h3>
                     <span
                       className={`shrink-0 rounded-lg border-2 px-3 py-0.5 text-xs font-semibold ${
-                        booking.status === "CONFIRMED"
-                          ? "border-green-700 bg-green-100 text-green-700"
-                          : "border-red-700 bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {booking.status === "CONFIRMED" ? "Confirmado" : "Cancelado"}
+                      booking.status === "CONFIRMED" ? 'border-green-700 bg-green-100 text-green-700' : 
+                        ( booking.status === "CANCELED" ? 'border-red-700 bg-red-100 text-red-700' : 'border-slate-700 bg-slate-100 text-slate-700')}`
+                    }>
+                      {booking.status === "CONFIRMED" ? "Confirmado" : ( booking.status === "CANCELED" ? 'Cancelado' : 'Concluído')}
                     </span>
                   </div>
 
