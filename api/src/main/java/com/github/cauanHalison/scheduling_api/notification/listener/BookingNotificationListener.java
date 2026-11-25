@@ -46,6 +46,7 @@ public class BookingNotificationListener {
         String eventTitle = escape(booking.eventTitle());
         String providerName = escape(booking.providerName());
         String period = formatPeriod(booking);
+        String eventLinkHtml = formatEventLinkHtml(booking.eventLink());
 
         String cancelUrl = frontendUrl + "/guest/bookings/" + booking.cancelToken();
 
@@ -56,6 +57,7 @@ public class BookingNotificationListener {
                 <h2>Olá, %s!</h2>
                 <p>Seu agendamento para <strong>%s</strong> com <strong>%s</strong> foi confirmado.</p>
                 <p><strong>Quando:</strong> %s</p>
+                %s
                 <p>O convite para adicionar à sua agenda está em anexo (<code>invite.ics</code>).</p>
                 <p>Precisa cancelar ou visualizar mais detalhes? <a href="%s">Clique aqui para gerenciar seu agendamento</a>.</p>
                 """.formatted(
@@ -63,6 +65,7 @@ public class BookingNotificationListener {
                         eventTitle,
                         providerName,
                         period,
+                        eventLinkHtml,
                         cancelUrl
                 ),
                 icsBytes
@@ -76,11 +79,13 @@ public class BookingNotificationListener {
                 <p><strong>Cliente:</strong> %s (%s)</p>
                 <p><strong>Evento:</strong> %s</p>
                 <p><strong>Quando:</strong> %s</p>
+                %s
                 """.formatted(
                         clientName,
                         clientEmail,
                         eventTitle,
-                        period
+                        period,
+                        eventLinkHtml
                 ),
                 icsBytes
         );
@@ -154,6 +159,7 @@ public class BookingNotificationListener {
         BookingSnapshot booking = event.booking();
         String cancelUrl = frontendUrl + "/guest/bookings/" + booking.cancelToken();
         String period = formatPeriod(booking);
+        String eventLinkHtml = formatEventLinkHtml(booking.eventLink());
 
         emailService.sendEmail(
                 booking.clientEmail(),
@@ -161,16 +167,26 @@ public class BookingNotificationListener {
                 """
                 <h2>Olá, %s!</h2>
                 <p>Este é um lembrete do seu agendamento de <strong>%s</strong> com <strong>%s</strong> para <strong>%s</strong>.</p>
+                %s
                 <p>Precisa cancelar ou visualizar mais detalhes? <a href="%s">Clique aqui para gerenciar seu agendamento</a>.</p>
                 """.formatted(
                         escape(booking.clientName()),
                         escape(booking.eventTitle()),
                         escape(booking.providerName()),
                         period,
+                        eventLinkHtml,
                         cancelUrl
                 ),
                 null
         );
+    }
+
+    private static String formatEventLinkHtml(String eventLink) {
+        if (eventLink == null || eventLink.isBlank()) {
+            return "";
+        }
+        String safeLink = escape(eventLink);
+        return "<p><strong>Link do evento:</strong> <a href=\"%s\">%s</a></p>".formatted(safeLink, safeLink);
     }
 
     private static String formatPeriod(BookingSnapshot booking) {

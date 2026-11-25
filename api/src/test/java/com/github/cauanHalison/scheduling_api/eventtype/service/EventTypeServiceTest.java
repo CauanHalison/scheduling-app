@@ -54,6 +54,7 @@ class EventTypeServiceTest {
         EventTypeRequest request = new EventTypeRequest(
                 "Event type test",
                 "event-type-test",
+                "  https://meet.google.com/abc-defg-hij  ",
                 "event type test",
                 50,
                 5
@@ -73,9 +74,41 @@ class EventTypeServiceTest {
         assertThat(response.title()).isEqualTo("Event type test");
         assertThat(response.description()).isEqualTo("event type test");
         assertThat(response.slug()).isEqualTo("event-type-test");
+        assertThat(response.eventLink()).isEqualTo("https://meet.google.com/abc-defg-hij");
         assertThat(response.durationMinutes()).isEqualTo(50);
         assertThat(response.bufferAfterMinutes()).isEqualTo(5);
         assertThat(response.isActive()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Should create event type with null eventLink when link is null or blank")
+    void shouldNormalizeNullOrBlankEventLinkOnCreate() {
+        EventTypeRequest nullLinkRequest = new EventTypeRequest(
+                "Event without link",
+                "event-without-link",
+                null,
+                "desc",
+                30,
+                0
+        );
+        EventTypeRequest blankLinkRequest = new EventTypeRequest(
+                "Event blank link",
+                "event-blank-link",
+                "   ",
+                "desc",
+                30,
+                0
+        );
+
+        when(eventTypeRepository.existsByProviderIdAndSlug(eq(authenticatedProvider.getId()), anyString())).thenReturn(false);
+        when(providerRepository.getReferenceById(authenticatedProvider.getId())).thenReturn(authenticatedProvider);
+        when(eventTypeRepository.save(any(EventTypeEntity.class))).thenAnswer(i -> i.getArgument(0));
+
+        EventTypeResponse nullResponse = eventTypeService.create(nullLinkRequest, authenticatedProvider.getId());
+        EventTypeResponse blankResponse = eventTypeService.create(blankLinkRequest, authenticatedProvider.getId());
+
+        assertThat(nullResponse.eventLink()).isNull();
+        assertThat(blankResponse.eventLink()).isNull();
     }
 
     @Test
@@ -84,6 +117,7 @@ class EventTypeServiceTest {
         EventTypeRequest request = new EventTypeRequest(
                 "Event type test",
                 "duplicated-slug",
+                null,
                 "description",
                 30,
                 5
@@ -107,6 +141,7 @@ class EventTypeServiceTest {
         EventTypeRequest request = new EventTypeRequest(
                 "updated event type",
                 "updated-event-type",
+                "   ",
                 "updated event type",
                 10,
                 2
@@ -125,6 +160,7 @@ class EventTypeServiceTest {
         assertThat(response.title()).isEqualTo("updated event type");
         assertThat(response.description()).isEqualTo("updated event type");
         assertThat(response.slug()).isEqualTo("updated-event-type");
+        assertThat(response.eventLink()).isNull();
         assertThat(response.durationMinutes()).isEqualTo(10);
         assertThat(response.bufferAfterMinutes()).isEqualTo(2);
     }
@@ -136,6 +172,7 @@ class EventTypeServiceTest {
         EventTypeRequest request = new EventTypeRequest(
                 "Updated title",
                 "slug-used-in-other-event",
+                null,
                 "description",
                 30,
                 5
@@ -156,7 +193,7 @@ class EventTypeServiceTest {
     @DisplayName("Should throw ResourceNotFoundException when updating a non-existent event type")
     void shouldThrowNotFoundWhenUpdatingNonExistentEventType() {
         UUID randomEventId = UUID.randomUUID();
-        EventTypeRequest request = new EventTypeRequest("Title", "slug-test", "desc", 30, 5);
+        EventTypeRequest request = new EventTypeRequest("Title", "slug-test", null, "desc", 30, 5);
 
         when(eventTypeRepository.findByIdAndProviderId(randomEventId, authenticatedProvider.getId()))
                 .thenReturn(Optional.empty());
@@ -256,6 +293,7 @@ class EventTypeServiceTest {
         assertThat(response.id()).isEqualTo(entity.getId());
         assertThat(response.title()).isEqualTo(entity.getTitle());
         assertThat(response.slug()).isEqualTo(entity.getSlug());
+        assertThat(response.eventLink()).isEqualTo(entity.getEventLink());
         assertThat(response.description()).isEqualTo(entity.getDescription());
         assertThat(response.durationMinutes()).isEqualTo(entity.getDurationMinutes());
         assertThat(response.bufferAfterMinutes()).isEqualTo(entity.getBufferAfterMinutes());
@@ -283,6 +321,7 @@ class EventTypeServiceTest {
         entity.setProvider(authenticatedProvider);
         entity.setTitle("Original title");
         entity.setSlug("original-slug");
+        entity.setEventLink("https://meet.google.com/original-room");
         entity.setDescription("Original description");
         entity.setDurationMinutes(30);
         entity.setBufferAfterMinutes(10);

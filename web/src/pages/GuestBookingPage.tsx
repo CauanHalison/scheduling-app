@@ -68,6 +68,18 @@ export function GuestBookingPage() {
             </span>
           </div>
 
+          {booking.eventLink && booking.status === "CONFIRMED" && (
+            <div className="flex items-center justify-between gap-4 py-3 text-sm">
+              <span className="text-slate-500">Link do evento</span>
+              <a
+                href={booking.eventLink}
+                className="font-semibold text-blue-600 hover:underline text-right truncate max-w-[240px]"
+              >
+                {booking.eventLink}
+              </a>
+            </div>
+          )}
+
           <div className="flex items-center justify-between gap-4 py-3 text-sm">
             <span className="text-slate-500">Status</span>
             <span

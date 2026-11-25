@@ -9,7 +9,7 @@ import {
   useToggleEventType,
 } from "../hooks";
 import type { EventTypeResponse } from "../types/eventType";
-import { Clock, Copy, Edit, Plus, Trash } from "lucide-react";
+import { Clock, Copy, Edit, Link2, Plus, Trash } from "lucide-react";
 
 export function EventTypesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -122,6 +122,18 @@ export function EventTypesPage() {
                 <p className="text-sm text-slate-600 line-clamp-2">
                   {event.description || "Sem descrição"}
                 </p>
+
+                {event.eventLink && (
+                  <span className="flex flex-row flex-nowrap items-center gap-2 text-sm text-slate-500 min-w-0">
+                    <Link2 className="h-4 w-4 shrink-0 text-blue-600" />
+                    <a
+                      href={event.eventLink}
+                      className="truncate text-blue-600 hover:underline"
+                    >
+                      {event.eventLink}
+                    </a>
+                  </span>
+                )}
 
                 <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
                   <span className="inline-flex items-center gap-1">

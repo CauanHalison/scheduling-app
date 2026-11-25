@@ -43,6 +43,7 @@ class BookingNotificationListenerTest {
                 UUID.randomUUID(),
                 "Event Test",
                 "event description test",
+                "https://meet.google.com/event-test",
                 "Provider Test",
                 "provider@test.com",
                 "America/Sao_Paulo",
@@ -65,13 +66,13 @@ class BookingNotificationListenerTest {
         verify(emailService).sendEmail(
                 eq("client@test.com"),
                 contains("Agendamento Confirmado"),
-                contains("/guest/bookings/" + bookingSnapshot.cancelToken()),
+                contains("https://meet.google.com/event-test"),
                 eq(ics)
         );
         verify(emailService).sendEmail(
                 eq("provider@test.com"),
                 contains("Novo Agendamento"),
-                contains("16/11/2026 das 09:00 às 09:30 (America/Sao_Paulo)"),
+                contains("https://meet.google.com/event-test"),
                 eq(ics)
         );
     }
@@ -109,7 +110,7 @@ class BookingNotificationListenerTest {
     @Test
     void shouldEscapeHtmlInUserControlledFields() {
         BookingSnapshot malicious = new BookingSnapshot(
-                UUID.randomUUID(), UUID.randomUUID(), "Event Test", "desc",
+                UUID.randomUUID(), UUID.randomUUID(), "Event Test", "desc", null,
                 "Provider Test", "provider@test.com", "America/Sao_Paulo",
                 "<script>alert(1)</script>", "client@test.com",
                 Instant.now(), Instant.now().plusSeconds(1800),
@@ -131,7 +132,7 @@ class BookingNotificationListenerTest {
     @Test
     void shouldUseFallbackReasonWhenCancellationReasonIsNull() {
         BookingSnapshot noReason = new BookingSnapshot(
-                UUID.randomUUID(), UUID.randomUUID(), "Event Test", "desc",
+                UUID.randomUUID(), UUID.randomUUID(), "Event Test", "desc", null,
                 "Provider Test", "provider@test.com", "America/Sao_Paulo", "Client", "client@test.com",
                 Instant.now(), Instant.now().plusSeconds(1800), null
         );
@@ -151,7 +152,7 @@ class BookingNotificationListenerTest {
         verify(emailService).sendEmail(
                 eq("client@test.com"),
                 contains("Lembrete de agendamento"),
-                contains("16/11/2026 das 09:00 às 09:30 (America/Sao_Paulo)"),
+                contains("https://meet.google.com/event-test"),
                 isNull()
         );
     }
@@ -159,7 +160,7 @@ class BookingNotificationListenerTest {
     @Test
     void shouldFallbackToUtcWhenProviderTimeZoneIsMissingOrInvalid() {
         BookingSnapshot noZone = new BookingSnapshot(
-                UUID.randomUUID(), UUID.randomUUID(), "Event Test", "desc",
+                UUID.randomUUID(), UUID.randomUUID(), "Event Test", "desc", null,
                 "Provider Test", "provider@test.com", "Invalid/Zone", "Client", "client@test.com",
                 Instant.parse("2026-11-16T12:00:00Z"), Instant.parse("2026-11-16T12:30:00Z"), null
         );

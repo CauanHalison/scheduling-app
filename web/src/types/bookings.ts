@@ -34,6 +34,7 @@ export interface CreateBookingRequest {
 export interface BookingConfirmationResponse {
   id: string,
   eventTitle: string,
+  eventLink: string | null,
   providerName: string,
   clientName: string,
   clientEmail: string,
@@ -52,6 +53,7 @@ export interface GuestBookingResponse {
   id: string,
   eventTitle: string,
   eventDescription: string | null,
+  eventLink: string | null,
   durationMinutes: number,
   providerName: string,
   clientName: string,
@@ -70,6 +72,7 @@ export interface ProviderBookingResponse {
   id: string,
   eventTypeId: string,
   eventTitle: string,
+  eventLink: string | null,
   durationMinutes: number,
   clientName: string,
   clientEmail: string,

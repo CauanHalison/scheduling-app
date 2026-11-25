@@ -9,7 +9,7 @@ import com.github.cauanHalison.scheduling_api.bookings.mapper.BookingMapper;
 import com.github.cauanHalison.scheduling_api.bookings.repository.BookingRepository;
 import com.github.cauanHalison.scheduling_api.config.cache.CacheConfiguration;
 import com.github.cauanHalison.scheduling_api.eventtype.domain.EventTypeEntity;
-import com.github.cauanHalison.scheduling_api.eventtype.dto.EventTypeResponse;
+import com.github.cauanHalison.scheduling_api.eventtype.dto.PublicEventTypeResponse;
 import com.github.cauanHalison.scheduling_api.eventtype.mapper.EventTypeMapper;
 import com.github.cauanHalison.scheduling_api.eventtype.repository.EventTypeRepository;
 import com.github.cauanHalison.scheduling_api.exception.exceptions.ResourceConflictException;
@@ -40,11 +40,11 @@ public class PublicBookingService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
-    public List<EventTypeResponse> getProviderActiveEvents(String userSlug) {
+    public List<PublicEventTypeResponse> getProviderActiveEvents(String userSlug) {
         log.debug("Fetching all active public events for provider: userSlug={}", userSlug);
         List<EventTypeEntity> events = eventTypeRepository.findAllByProviderSlugAndIsActiveTrueOrderByCreatedAtDesc(userSlug);
         log.info("Found {} active public events for userSlug={}", events.size(), userSlug);
-        return events.stream().map(eventTypeMapper::toResponse).toList();
+        return events.stream().map(eventTypeMapper::toPublicResponse).toList();
     }
 
     @Transactional(readOnly = true)

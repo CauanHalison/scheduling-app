@@ -64,6 +64,7 @@ class EventTypeControllerTest {
         EventTypeRequest request = new EventTypeRequest(
                 "Event test",
                 "event-test",
+                "https://meet.google.com/abc-defg-hij",
                 "Event test description",
                 50,
                 5
@@ -74,6 +75,7 @@ class EventTypeControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.eventLink").value("https://meet.google.com/abc-defg-hij"))
                 .andReturn();
 
         EventTypeResponse eventTypeResponse = objectMapper.readValue(
@@ -87,7 +89,8 @@ class EventTypeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].title").value("Event test"))
-                .andExpect(jsonPath("$[0].slug").value("event-test"));
+                .andExpect(jsonPath("$[0].slug").value("event-test"))
+                .andExpect(jsonPath("$[0].eventLink").value("https://meet.google.com/abc-defg-hij"));
 
         // Find By Id (200)
         mockMvc.perform(get("/event-types/{eventTypeId}", eventTypeResponse.id())
@@ -96,6 +99,7 @@ class EventTypeControllerTest {
                 .andExpect(jsonPath("$.id").value(eventTypeResponse.id().toString()))
                 .andExpect(jsonPath("$.title").value("Event test"))
                 .andExpect(jsonPath("$.slug").value("event-test"))
+                .andExpect(jsonPath("$.eventLink").value("https://meet.google.com/abc-defg-hij"))
                 .andExpect(jsonPath("$.description").value("Event test description"))
                 .andExpect(jsonPath("$.durationMinutes").value(50))
                 .andExpect(jsonPath("$.bufferAfterMinutes").value(5))
@@ -105,6 +109,7 @@ class EventTypeControllerTest {
         EventTypeRequest updatedEvent = new EventTypeRequest(
                 "Event update test",
                 "event-update-test",
+                "https://zoom.us/j/123456789",
                 "Event update test description",
                 40,
                 3
@@ -117,6 +122,7 @@ class EventTypeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(eventTypeResponse.id().toString()))
                 .andExpect(jsonPath("$.slug").value("event-update-test"))
+                .andExpect(jsonPath("$.eventLink").value("https://zoom.us/j/123456789"))
                 .andExpect(jsonPath("$.title").value("Event update test"))
                 .andExpect(jsonPath("$.description").value("Event update test description"))
                 .andExpect(jsonPath("$.isActive").value(true))
@@ -153,6 +159,7 @@ class EventTypeControllerTest {
         EventTypeRequest invalidRequest = new EventTypeRequest(
                 "",
                 "invalid slug",
+                "javascript:alert(1)",
                 "Valid description",
                 0,
                 -1
@@ -165,7 +172,7 @@ class EventTypeControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value(400))
                 .andExpect(jsonPath("$.errors").isArray())
-                .andExpect(jsonPath("$.errors.length()").value(4));
+                .andExpect(jsonPath("$.errors.length()").value(5));
     }
 
     @Test
@@ -174,6 +181,7 @@ class EventTypeControllerTest {
         EventTypeRequest originalEvent = new EventTypeRequest(
                 "Event test",
                 "event-test",
+                null,
                 "Event test description",
                 50,
                 5
@@ -182,6 +190,7 @@ class EventTypeControllerTest {
         EventTypeRequest newEvent = new EventTypeRequest(
                 "Event test",
                 "event-test",
+                null,
                 "Event test description",
                 50,
                 5
@@ -209,6 +218,7 @@ class EventTypeControllerTest {
         EventTypeRequest request = new EventTypeRequest(
                 "Provider A Event",
                 "provider-a-event",
+                null,
                 "Description",
                 30,
                 5

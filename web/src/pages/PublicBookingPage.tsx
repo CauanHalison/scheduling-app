@@ -155,6 +155,17 @@ export function PublicBookingPage() {
                 {formatFullDateTime(confirmation.startTime)}
               </span>
             </div>
+            {confirmation.eventLink && confirmation.status === "CONFIRMED" && (
+              <div className="flex items-center justify-between gap-4 py-3 text-sm">
+                <span className="text-slate-500">Link do evento</span>
+                <a
+                  href={confirmation.eventLink}
+                  className="font-semibold text-blue-600 hover:underline text-right truncate max-w-[240px]"
+                >
+                  {confirmation.eventLink}
+                </a>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-2.5">

@@ -1,0 +1,1 @@
+ALTER TABLE event_type ADD COLUMN event_link varchar(500) NULL;

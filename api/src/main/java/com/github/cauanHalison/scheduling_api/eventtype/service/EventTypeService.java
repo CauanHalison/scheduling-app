@@ -38,6 +38,7 @@ public class EventTypeService {
         ProviderEntity providerEntity = providerRepository.getReferenceById(providerId);
         EventTypeEntity entity = eventTypeMapper.toEntity(eventTypeRequest);
 
+        entity.setEventLink(normalizeEventLink(entity.getEventLink()));
         entity.setProvider(providerEntity);
 
         EventTypeEntity savedEntity = eventTypeRepository.save(entity);
@@ -61,6 +62,7 @@ public class EventTypeService {
         }
 
         eventTypeMapper.updateEntity(entity, request);
+        entity.setEventLink(normalizeEventLink(entity.getEventLink()));
         EventTypeEntity updated = eventTypeRepository.save(entity);
 
         log.info("Event type updated successfully: id={}, providerId={}",
@@ -117,5 +119,13 @@ public class EventTypeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Tipo de evento não encontrado."));
 
         return eventTypeMapper.toResponse(eventType);
+    }
+
+    private String normalizeEventLink(String eventLink) {
+        if (eventLink == null) {
+            return null;
+        }
+        String trimmed = eventLink.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

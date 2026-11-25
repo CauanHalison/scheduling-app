@@ -5,7 +5,7 @@ import com.github.cauanHalison.scheduling_api.bookings.dto.AvailableSlotsRespons
 import com.github.cauanHalison.scheduling_api.bookings.dto.BookingConfirmationResponse;
 import com.github.cauanHalison.scheduling_api.bookings.dto.CreateBookingRequest;
 import com.github.cauanHalison.scheduling_api.bookings.dto.PublicEventDetailsResponse;
-import com.github.cauanHalison.scheduling_api.eventtype.dto.EventTypeResponse;
+import com.github.cauanHalison.scheduling_api.eventtype.dto.PublicEventTypeResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,7 +23,7 @@ public interface PublicBookingControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Active event types returned successfully")
     })
-    ResponseEntity<List<EventTypeResponse>> getProviderEvents(
+    ResponseEntity<List<PublicEventTypeResponse>> getProviderEvents(
             @Parameter(description = "Service provider slug", example = "cauan-halison") String userSlug
     );
 

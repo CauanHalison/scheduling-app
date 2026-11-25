@@ -91,7 +91,7 @@ class ProviderBookingControllerTest {
     @DisplayName("Should list bookings for provider")
     void shouldListBookings() throws Exception {
         ProviderBookingResponse response = new ProviderBookingResponse(
-                UUID.randomUUID(), UUID.randomUUID(), "Mentoria", 30, "Carlos", "carlos@gmail.com",
+                UUID.randomUUID(), UUID.randomUUID(), "Mentoria", "https://meet.google.com/mentoria", 30, "Carlos", "carlos@gmail.com",
                 Instant.now(), Instant.now().plusSeconds(1800), BookingStatus.CONFIRMED, null, Instant.now()
         );
 
@@ -101,7 +101,8 @@ class ProviderBookingControllerTest {
         mockMvc.perform(get("/provider/bookings"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].clientName").value("Carlos"));
+                .andExpect(jsonPath("$.content[0].clientName").value("Carlos"))
+                .andExpect(jsonPath("$.content[0].eventLink").value("https://meet.google.com/mentoria"));
     }
 
     @Test
@@ -110,7 +111,7 @@ class ProviderBookingControllerTest {
         UUID bookingId = UUID.randomUUID();
 
         ProviderBookingResponse response = new ProviderBookingResponse(
-                bookingId, UUID.randomUUID(), "Mentoria", 30, "Carlos", "carlos@gmail.com",
+                bookingId, UUID.randomUUID(), "Mentoria", "https://meet.google.com/mentoria", 30, "Carlos", "carlos@gmail.com",
                 Instant.now(), Instant.now().plusSeconds(1800), BookingStatus.CONFIRMED, null, Instant.now()
         );
 
@@ -118,7 +119,8 @@ class ProviderBookingControllerTest {
 
         mockMvc.perform(get("/provider/bookings/{id}", bookingId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(bookingId.toString()));
+                .andExpect(jsonPath("$.id").value(bookingId.toString()))
+                .andExpect(jsonPath("$.eventLink").value("https://meet.google.com/mentoria"));
     }
 
     @Test
@@ -128,7 +130,7 @@ class ProviderBookingControllerTest {
 
         CancelBookingRequest request = new CancelBookingRequest("Compromisso urgente");
         ProviderBookingResponse response = new ProviderBookingResponse(
-                bookingId, UUID.randomUUID(), "Mentoria", 30, "Carlos", "carlos@gmail.com",
+                bookingId, UUID.randomUUID(), "Mentoria", null, 30, "Carlos", "carlos@gmail.com",
                 Instant.now(), Instant.now().plusSeconds(1800), BookingStatus.CANCELED, "Compromisso urgente", Instant.now()
         );
 

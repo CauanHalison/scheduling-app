@@ -30,6 +30,7 @@ export function EventTypeModal({ initialData, onClose }: EventTypeModalProps) {
       ? {
           title: initialData.title,
           slug: initialData.slug,
+          eventLink: initialData.eventLink || "",
           description: initialData.description || "",
           durationMinutes: initialData.durationMinutes,
           bufferAfterMinutes: initialData.bufferAfterMinutes,
@@ -37,6 +38,7 @@ export function EventTypeModal({ initialData, onClose }: EventTypeModalProps) {
       : {
           title: "",
           slug: "",
+          eventLink: "",
           description: "",
           durationMinutes: 30,
           bufferAfterMinutes: 0,
@@ -48,6 +50,7 @@ export function EventTypeModal({ initialData, onClose }: EventTypeModalProps) {
       reset({
         title: initialData.title,
         slug: initialData.slug,
+        eventLink: initialData.eventLink || "",
         description: initialData.description || "",
         durationMinutes: initialData.durationMinutes,
         bufferAfterMinutes: initialData.bufferAfterMinutes,
@@ -125,6 +128,17 @@ export function EventTypeModal({ initialData, onClose }: EventTypeModalProps) {
               />
             </div>
             {errors.slug && <span className="form-error">{errors.slug.message}</span>}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="eventLink">Link do evento</label>
+            <input
+              className="input-field"
+              id="eventLink"
+              {...register("eventLink")}
+              placeholder="Ex: https://meet.google.com/abc-defg-hij"
+            />
+            {errors.eventLink && <span className="form-error">{errors.eventLink.message}</span>}
           </div>
 
           <div className="form-group">

@@ -9,6 +9,7 @@ public record GuestBookingResponse(
         UUID id,
         String eventTitle,
         String eventDescription,
+        String eventLink,
         Integer durationMinutes,
         String providerName,
         String clientName,
