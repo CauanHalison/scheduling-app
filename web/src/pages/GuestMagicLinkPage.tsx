@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MailCheck, User } from "lucide-react";
+import { Calendar, Clock, Link2, MailCheck, User } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
@@ -110,6 +110,18 @@ export function GuestMagicLinkPage() {
                     <User className="h-4 w-4 shrink-0 text-slate-400" />
                     <span className="truncate">Prestador: {booking.providerName}</span>
                   </span>
+
+                  {booking.eventLink && booking.status === "CONFIRMED" && (
+                    <span className="flex flex-row flex-nowrap items-center gap-2 text-sm text-slate-500 min-w-0">
+                      <Link2 className="h-4 w-4 shrink-0 text-blue-600" />
+                      <a
+                        href={booking.eventLink}
+                        className="truncate text-blue-600 hover:underline"
+                      >
+                        {booking.eventLink}
+                      </a>
+                    </span>
+                  )}
 
                   <div className="flex flex-wrap items-center gap-4 pt-1 text-sm text-slate-600">
                     <span className="inline-flex items-center gap-2">

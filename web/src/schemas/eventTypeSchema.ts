@@ -15,6 +15,15 @@ export const eventTypeSchema = z.object({
       "Use apenas letras minúsculas, números e hífens (ex: consulta-inicial)"
     ),
 
+  eventLink: z
+    .string()
+    .max(500, "O link deve ter no máximo 500 caracteres")
+    .regex(
+      /^(\s*|\s*https?:\/\/\S+\s*)$/,
+      "O link do evento deve ser uma URL válida iniciando com http:// ou https://"
+    )
+    .default(""),
+
   description: z
     .string()
     .max(500, "A descrição não pode passar de 500 caracteres")

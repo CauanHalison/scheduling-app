@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CancelBookingModal } from "../components";
 import { useCancelProviderBooking, useEventTypes, useProviderBookings } from "../hooks";
-import { Calendar, Clock, User } from 'lucide-react';
+import { Calendar, Clock, Link2, User } from 'lucide-react';
 import type { BookingStatus, ProviderBookingResponse } from "../types";
 
 export function ProviderBookingsPage() {
@@ -200,6 +200,18 @@ export function ProviderBookingsPage() {
                       {booking.clientName} ({booking.clientEmail})
                     </span>
                   </span>
+
+                  {booking.eventLink && (
+                    <span className="flex flex-row flex-nowrap items-center gap-2 text-sm text-slate-500 min-w-0">
+                      <Link2 className="h-4 w-4 shrink-0 text-blue-600"/>
+                      <a
+                        href={booking.eventLink}
+                        className="truncate text-blue-600 hover:underline"
+                      >
+                        {booking.eventLink}
+                      </a>
+                    </span>
+                  )}
 
                   <div className="flex flex-wrap items-center gap-4 pt-1 text-sm text-slate-600">
                     <span className="inline-flex items-center gap-2"><Calendar className="h-4 w-4 text-blue-600"/> {formatDateTime(booking.startTime)}</span>
