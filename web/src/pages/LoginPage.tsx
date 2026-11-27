@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { TimeZoneSelect } from "../components";
 import { useAuth } from "../hooks";
 import type { ApiErrorResponse, AuthRequest, RegisterProviderRequest } from "../types";
 
@@ -213,19 +214,15 @@ export function LoginPage() {
           {isRegister && (
             <div className="form-group">
               <label htmlFor="timeZone" className="form-label">
-                Fuso horário
+                Fuso horário ({formData.timeZone})
               </label>
-              <input
+              <TimeZoneSelect
                 id="timeZone"
-                name="timeZone"
-                type="text"
-                className="input-field"
-                placeholder="America/Sao_Paulo"
                 value={formData.timeZone}
-                onChange={handleChange}
+                onChange={(timeZone) =>
+                  setFormData((prev) => ({ ...prev, timeZone }))
+                }
                 disabled={loading}
-                required
-                maxLength={50}
               />
             </div>
           )}
